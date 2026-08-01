@@ -38,9 +38,9 @@ MESSAGE_TEXT_LIMIT = 1200
 MESSAGE_TEXT_FLOOR = 500
 MEDIA_FIELD_LIMIT = 700
 
-# Degradation ladder, applied in order until the context fits.
+# Degradation ladder, applied in order until the context fits. Evidence count
+# steps are derived from K at runtime rather than fixed here.
 _CANDIDATE_TEXT_STEPS = (180, 130, 90, 60)
-_CANDIDATE_COUNT_STEPS = (DEFAULT_SHORTLIST, 5, 4, 3, 2)
 
 
 def estimate_tokens(obj):
@@ -142,8 +142,13 @@ def _sender_block(dataset, message):
 
 
 def build_context(message, dataset, reaction_stats, token_budget=DEFAULT_TOKEN_BUDGET,
-                  shortlist_limit=DEFAULT_SHORTLIST):
-    """Assemble one decision context. Pure: no I/O, no model calls."""
+                  shortlist_limit=DEFAULT_SHORTLIST, allow_fallback=True):
+    """Assemble one decision context. Pure: no I/O, no model calls.
+
+    `shortlist_limit` is K -- how many evidence candidates the router may choose
+    from. `allow_fallback=False` restricts evidence strictly to the same
+    sender/group/business.
+    """
     media = dataset.media.get(message.get("media_id") or "") if message.get("media_id") else None
     history_rows = dataset.user_history(message["user_id"])
     stats = reaction_stats.get((message["user_id"], counterpart_of(message)))
@@ -170,13 +175,14 @@ def build_context(message, dataset, reaction_stats, token_budget=DEFAULT_TOKEN_B
         context["rapport_with_this_sender"] = stats.summary()
 
     candidates = shortlist(message, dataset, limit=shortlist_limit,
-                           text_chars=_CANDIDATE_TEXT_STEPS[0])
+                           text_chars=_CANDIDATE_TEXT_STEPS[0], allow_fallback=allow_fallback)
     context["evidence_candidates"] = candidates
 
-    return _fit_to_budget(context, message, dataset, token_budget, shortlist_limit)
+    return _fit_to_budget(context, message, dataset, token_budget, shortlist_limit,
+                          allow_fallback)
 
 
-def _fit_to_budget(context, message, dataset, budget, shortlist_limit):
+def _fit_to_budget(context, message, dataset, budget, shortlist_limit, allow_fallback=True):
     """Shrink in a fixed order until the context fits, then record the outcome.
 
     Order matters: evidence detail is the most compressible thing here, and the
@@ -191,16 +197,19 @@ def _fit_to_budget(context, message, dataset, budget, shortlist_limit):
     for text_chars in _CANDIDATE_TEXT_STEPS[1:]:
         context["evidence_candidates"] = shortlist(
             message, dataset, limit=min(shortlist_limit, len(context["evidence_candidates"])),
-            text_chars=text_chars)
+            text_chars=text_chars, allow_fallback=allow_fallback)
         if estimate_tokens(context) <= budget:
             return _finish(context, True)
 
-    # 2. drop the lowest-ranked evidence items
-    for count in _CANDIDATE_COUNT_STEPS[1:]:
+    # 2. drop the lowest-ranked evidence items, one at a time down to a floor of 2.
+    # Derived from K rather than a fixed list so a larger K degrades gradually
+    # instead of collapsing in one step.
+    for count in range(len(context["evidence_candidates"]) - 1, 1, -1):
         if count >= len(context["evidence_candidates"]):
             continue
         context["evidence_candidates"] = shortlist(
-            message, dataset, limit=count, text_chars=_CANDIDATE_TEXT_STEPS[-1])
+            message, dataset, limit=count, text_chars=_CANDIDATE_TEXT_STEPS[-1],
+            allow_fallback=allow_fallback)
         if estimate_tokens(context) <= budget:
             return _finish(context, True)
 

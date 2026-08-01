@@ -91,10 +91,12 @@ Turns one message row into a compact JSON decision context. No API key, no
 network, fully deterministic.
 
 ```bash
-python code/context/run.py --stats            # token report over all 110
-python code/context/run.py --show msg_066     # inspect one context
+python code/context/run.py --stats                 # token + evidence report over all 110
+python code/context/run.py --show msg_066          # inspect one context
+python code/context/run.py --top-k 10              # more evidence candidates
+python code/context/run.py --same-sender-only      # strict: no fallback tier
 python code/context/run.py --out contexts.json
-python code/context/run.py --samples --stats  # same, over sample_messages.csv
+python code/context/run.py --samples --stats       # same, over sample_messages.csv
 ```
 
 Context layout:
@@ -111,7 +113,7 @@ Context layout:
 ### Budget
 
 Default 1,400 tokens (~4 chars/token heuristic). Measured over all 110 messages:
-**min 461, p50 756, p95 936, max 963** — nothing truncated, ~82k tokens for the
+**min 234, p50 632, p95 854, max 936** — nothing truncated, ~67k tokens for the
 whole run. When a context does exceed budget it degrades in a fixed order:
 shorten evidence text → drop lowest-ranked evidence → trim the incoming message
 (never below a 500-char floor) → trim interpreted media text. The incoming
@@ -123,21 +125,63 @@ user's history becomes a ranked shortlist of at most 6 with the reaction attache
 
 ### Retrieval
 
-No embeddings, no vector store. A user has at most 32 historical messages (median
-15), so the candidate pool is ranked exhaustively:
+Fully deterministic and model-free — candidate selection happens before the LLM
+sees anything. No embeddings, no vector store: a user has at most 32 historical
+messages (median 15), so the pool is filtered and ranked exhaustively.
+
+**Two tiers.**
+
+1. **Primary** — same user **and** same sender/group/business. This is the pool
+   the evidence question is actually about.
+2. **Fallback** — same user, different counterpart, but a near-verbatim resend of
+   the same template (similarity ≥ 0.60). Only tops up when the primary tier is
+   thinner than K, and never outranks it. Disable with `--same-sender-only`.
+
+Within the pool:
 
 ```
-2.00 * same counterpart  +  1.50 * token overlap  +  0.60 * recency  +  0.25 * same conversation kind
+3.0 * primary tier  +  1.6 * reaction salience  +  1.2 * token overlap  +  0.8 * recency
 ```
 
-Ties break on `message_id` so ordering is stable across runs. Each candidate
-carries a plain-language reaction line — *"not opened, dismissed, MUTED sender
-after this"* — because raw history is weak but history joined with
-`message_events` is close to decisive.
+Ties break on `message_id`, so ordering is stable across runs.
+
+**Reaction salience** is the ranking's centre of gravity, since what the user
+*did* about a past message is stronger evidence than the message itself:
+
+| reaction | weight |
+|---|---|
+| reported | 1.00 |
+| muted sender after | 0.90 |
+| dismissed, never opened | 0.65 |
+| opened and replied | 0.50 |
+| opened only | 0.25 |
+| no recorded reaction | 0.00 |
+
+The scale is deliberately **symmetric**. Ranking only on negative reactions would
+starve the `notify` cases of supporting evidence — *"opened in 2 minutes and
+replied"* justifies an interrupt exactly as much as *"muted the sender after
+this"* justifies suppressing one. What is scored is how **decisive** a reaction
+is, not how bad it was.
+
+**K is configurable** — `--top-k` on the CLI, `shortlist_limit=` on
+`build_context()`, default 6.
 
 Candidates are **numbered**, and the router selects indices rather than typing
 message ids. `evidence_ids_for()` maps indices back and drops anything invalid,
 which makes a hallucinated evidence id structurally impossible.
+
+#### What the filter costs, measured
+
+Restricting to the same counterpart leaves **7 of 110 messages with no evidence
+at all** (`msg_089`–`msg_096`); those correctly emit `none`. A further 7 messages
+would have dropped a near-identical template from a different sender — **4 of
+which carry a MUTE or REPORT reaction**, the most decisive evidence available for
+that decision — which is why the fallback tier exists. It fires on exactly 7
+contexts and contributes 8 rows, so it is a top-up, not a back door.
+
+`msg_066` is the clearest case. Two same-sender rows, then two fallback rows at
+similarity 1.00 that both read *"not opened, dismissed, MUTED sender after
+this"*. Strict mode drops it from 4 candidates to 2.
 
 ### Signals, and the compute-once boundary
 
@@ -169,10 +213,10 @@ period is stated in the context so the router does not read it as "right now".
 
 ```bash
 python code/preprocess/test_preprocess.py   # 56 assertions
-python code/context/test_context.py         # 78 assertions
+python code/context/test_context.py         # 98 assertions
 ```
 
-134 assertions total, no network and no API key.
+154 assertions total, no network and no API key.
 
 The real dataset is healthy in both stages — all 30 media files resolve, and no
 context exceeds the token budget — so the failure paths would otherwise never

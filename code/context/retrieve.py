@@ -12,15 +12,57 @@ become `evidence_message_ids` in the output and are graded on relevance.
 from loaders import counterpart_of, parse_ts
 from textutil import condense, jaccard, tokens
 
-# Same counterpart dominates: "have I heard from this sender before, and what did I
-# do about it" is the question evidence is supposed to answer.
-W_SAME_COUNTERPART = 2.0
-W_TEXT_SIMILARITY = 1.5
-W_RECENCY = 0.6
-W_SAME_KIND = 0.25
+# --------------------------------------------------------------------------
+# ranking weights
+# --------------------------------------------------------------------------
+# Candidates are filtered to the same user and same counterpart first, so
+# "same sender" is a gate rather than a weight. Within that pool, ordering is by
+# how much a past message actually tells us.
+W_REACTION = 1.6        # what the user DID about it -- the strongest evidence
+W_TEXT_SIMILARITY = 1.2  # is this the same template being resent?
+W_RECENCY = 0.8         # older behaviour is weaker behaviour
+W_PRIMARY_TIER = 3.0    # same-sender evidence always outranks a fallback match
 
 DEFAULT_SHORTLIST = 6
 RECENCY_HALFLIFE_DAYS = 45.0
+
+# A cross-sender message must be at least this similar to qualify as fallback
+# evidence. Set high on purpose: the only cross-sender rows worth citing are
+# near-verbatim resends of the same template.
+FALLBACK_SIMILARITY = 0.6
+
+# --------------------------------------------------------------------------
+# reaction salience
+# --------------------------------------------------------------------------
+# Deliberately symmetric. Ranking only by negative reactions would starve the
+# notify cases of supporting evidence -- "the user opened this in 2 minutes and
+# replied" justifies an interrupt exactly as much as "the user muted the sender
+# after this" justifies suppressing one. What is being scored is how DECISIVE a
+# past reaction is, not how bad it was.
+REACTION_REPORTED = 1.0
+REACTION_MUTED_AFTER = 0.9
+REACTION_DISMISSED_UNOPENED = 0.65
+REACTION_OPENED_REPLIED = 0.5
+REACTION_OPENED = 0.25
+REACTION_NONE = 0.0
+
+
+def reaction_salience(event):
+    """How much a past reaction tells us, in [0, 1]. Highest signal wins."""
+    if not event:
+        return REACTION_NONE
+    if event.get("message_reported") == "1":
+        return REACTION_REPORTED
+    if event.get("muted_after_message") == "1":
+        return REACTION_MUTED_AFTER
+    opened = event.get("message_opened") == "1"
+    if event.get("notification_dismissed") == "1" and not opened:
+        return REACTION_DISMISSED_UNOPENED
+    if opened and event.get("message_replied") == "1":
+        return REACTION_OPENED_REPLIED
+    if opened:
+        return REACTION_OPENED
+    return REACTION_NONE
 
 
 def _recency_score(then, now):
@@ -57,8 +99,24 @@ def describe_reaction(event):
     return ", ".join(parts)
 
 
-def shortlist(message, dataset, limit=DEFAULT_SHORTLIST, text_chars=180):
-    """Rank this user's history and return the top `limit` as evidence candidates.
+def shortlist(message, dataset, limit=DEFAULT_SHORTLIST, text_chars=180,
+              allow_fallback=True):
+    """Deterministic, model-free evidence selection.
+
+    Two tiers, in order:
+
+      1. PRIMARY  -- same user AND same sender/group/business. This is the pool
+         the evidence question is actually about: "have I heard from this
+         counterpart before, and what did I do about it?"
+      2. FALLBACK -- same user, different counterpart, but a near-verbatim resend
+         of the same template (>= FALLBACK_SIMILARITY). Only used to top up when
+         the primary tier is thinner than `limit`, and never outranks it.
+
+    The fallback exists because it is load-bearing on real rows: 7 of 110 messages
+    have no same-counterpart history at all, and 7 more would otherwise drop a
+    near-identical template -- 4 of which carry a MUTE or REPORT reaction, i.e.
+    the single most decisive evidence available for that decision. Pass
+    allow_fallback=False for a strict same-sender-only shortlist.
 
     Returns a list of dicts carrying a 1-based `idx`. The router selects indices;
     it never types a message id, which makes a hallucinated evidence id
@@ -74,25 +132,25 @@ def shortlist(message, dataset, limit=DEFAULT_SHORTLIST, text_chars=180):
 
     scored = []
     for row in dataset.user_history(user_id):
-        same_cp = counterpart_of(row) == target_cp and bool(target_cp)
+        primary = bool(target_cp) and counterpart_of(row) == target_cp
         sim = jaccard(target_tokens, tokens(row.get("message_text"))) if target_tokens else 0.0
-        rec = _recency_score(parse_ts(row.get("created_at")), now)
-        same_kind = row.get("conversation_type") == message.get("conversation_type")
 
-        score = (W_SAME_COUNTERPART * (1.0 if same_cp else 0.0)
+        if not primary:
+            if not allow_fallback or sim < FALLBACK_SIMILARITY:
+                continue
+
+        event = dataset.event(user_id, row["message_id"])
+        score = (W_PRIMARY_TIER * (1.0 if primary else 0.0)
+                 + W_REACTION * reaction_salience(event)
                  + W_TEXT_SIMILARITY * sim
-                 + W_RECENCY * rec
-                 + W_SAME_KIND * (1.0 if same_kind else 0.0))
-        if score <= 0:
-            continue
-        scored.append((score, sim, same_cp, row))
+                 + W_RECENCY * _recency_score(parse_ts(row.get("created_at")), now))
+        scored.append((score, sim, primary, row, event))
 
     # Deterministic ordering: score desc, then message_id asc to break ties stably.
     scored.sort(key=lambda t: (-t[0], t[3]["message_id"]))
 
     out = []
-    for idx, (score, sim, same_cp, row) in enumerate(scored[:limit], start=1):
-        event = dataset.event(user_id, row["message_id"])
+    for idx, (score, sim, primary, row, event) in enumerate(scored[:limit], start=1):
         text = row.get("message_text") or ""
         if not text.strip() and row.get("media_id"):
             m = dataset.media.get(row["media_id"])
@@ -102,7 +160,7 @@ def shortlist(message, dataset, limit=DEFAULT_SHORTLIST, text_chars=180):
             "idx": idx,
             "message_id": row["message_id"],
             "when": row.get("created_at"),
-            "same_sender": bool(same_cp),
+            "same_sender": bool(primary),
             "text_similarity": round(sim, 2),
             "text": condense(text, text_chars),
             "user_reaction": describe_reaction(event),

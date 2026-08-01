@@ -18,6 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from aggregates import build_reaction_stats                     # noqa: E402
 from assemble import DEFAULT_TOKEN_BUDGET, build_all, build_context, estimate_tokens  # noqa: E402
 from loaders import DEFAULT_DATASET, DEFAULT_MEDIA_CACHE, Dataset  # noqa: E402
+from retrieve import DEFAULT_SHORTLIST                          # noqa: E402
 
 
 def _percentile(values, pct):
@@ -33,6 +34,12 @@ def main(argv=None):
     ap.add_argument("--dataset", default=DEFAULT_DATASET)
     ap.add_argument("--media-cache", default=DEFAULT_MEDIA_CACHE)
     ap.add_argument("--budget", type=int, default=DEFAULT_TOKEN_BUDGET)
+    ap.add_argument("--top-k", type=int, default=DEFAULT_SHORTLIST,
+                    help="evidence candidates offered to the router (default %d)"
+                         % DEFAULT_SHORTLIST)
+    ap.add_argument("--same-sender-only", action="store_true",
+                    help="restrict evidence to the same sender/group/business; "
+                         "disables the near-duplicate fallback tier")
     ap.add_argument("--show", default="", help="print the context for one message_id")
     ap.add_argument("--stats", action="store_true", help="token budget report")
     ap.add_argument("--out", default="", help="write all contexts to a JSON file")
@@ -54,6 +61,8 @@ def main(argv=None):
     print("  reaction pairs   : %d" % len(stats))
     print("  media interpreted: %d / %d in cache" % (interpreted, len(dataset.media)))
     print("  token budget     : %d" % args.budget)
+    print("  top-K evidence   : %d%s" % (
+        args.top_k, "  (same-sender only)" if args.same_sender_only else ""))
     print("")
 
     if args.show:
@@ -61,11 +70,15 @@ def main(argv=None):
         if match is None:
             print("ERROR: no such message_id: %s" % args.show, file=sys.stderr)
             return 2
-        ctx = build_context(match, dataset, stats, token_budget=args.budget)
+        ctx = build_context(match, dataset, stats, token_budget=args.budget,
+                            shortlist_limit=args.top_k,
+                            allow_fallback=not args.same_sender_only)
         print(json.dumps(ctx, indent=2, ensure_ascii=False))
         return 0
 
-    contexts = build_all(dataset, stats, rows=rows, token_budget=args.budget)
+    contexts = build_all(dataset, stats, rows=rows, token_budget=args.budget,
+                         shortlist_limit=args.top_k,
+                         allow_fallback=not args.same_sender_only)
 
     if args.out:
         with open(args.out, "w", encoding="utf-8", newline="\n") as f:
@@ -84,8 +97,16 @@ def main(argv=None):
         print("truncated: %d   over budget: %d" % (len(truncated), len(over)))
         if over:
             print("  OVER: %s" % ", ".join(sorted(over)[:10]))
+        counts = [len(c["evidence_candidates"]) for c in contexts.values()]
+        fallback_only = [mid for mid, c in contexts.items()
+                         if c["evidence_candidates"]
+                         and not any(e["same_sender"] for e in c["evidence_candidates"])]
+        print("evidence per context: min=%d p50=%d max=%d (K=%d)"
+              % (min(counts), _percentile(counts, 50), max(counts), args.top_k))
         print("contexts with no evidence candidates: %d %s"
               % (len(no_evidence), sorted(no_evidence)[:8] if no_evidence else ""))
+        print("contexts relying only on fallback (no same-sender history): %d %s"
+              % (len(fallback_only), sorted(fallback_only)[:8] if fallback_only else ""))
     return 0
 
 

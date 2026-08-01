@@ -164,6 +164,60 @@ def main():
           all(any(h["message_id"] == c["message_id"]
                   for h in ds.user_history("u_007")) for c in cands))
 
+    print("\n[reaction salience drives ranking]")
+    from retrieve import (FALLBACK_SIMILARITY, REACTION_NONE, REACTION_OPENED,
+                          REACTION_REPORTED, reaction_salience)
+    check("report is the strongest signal",
+          reaction_salience({"message_reported": "1"}) == REACTION_REPORTED)
+    check("mute-after outranks a plain dismissal",
+          reaction_salience({"muted_after_message": "1"})
+          > reaction_salience({"notification_dismissed": "1", "message_opened": "0"}))
+    check("dismissed-unopened outranks opened-and-replied",
+          reaction_salience({"notification_dismissed": "1", "message_opened": "0"})
+          > reaction_salience({"message_opened": "1", "message_replied": "1"}))
+    check("engagement is still salient, not zero",
+          reaction_salience({"message_opened": "1"}) == REACTION_OPENED > REACTION_NONE,
+          "ranking only on negatives would starve notify cases of evidence")
+    check("no recorded reaction is least salient",
+          reaction_salience({}) == REACTION_NONE and reaction_salience(None) == REACTION_NONE)
+    ranked = shortlist(msg(ds, "msg_066"), ds)
+    check("decisive reactions surface at the top",
+          "MUTED" in ranked[0]["user_reaction"] or "REPORTED" in ranked[0]["user_reaction"],
+          ranked[0]["user_reaction"])
+
+    print("\n[two-tier filter]")
+    strict = shortlist(msg(ds, "msg_066"), ds, allow_fallback=False)
+    check("strict mode keeps only same-sender rows",
+          all(c["same_sender"] for c in strict), [c["same_sender"] for c in strict])
+    check("fallback adds near-identical templates from other senders",
+          len(ranked) > len(strict), (len(ranked), len(strict)))
+    check("primary tier always outranks fallback",
+          [c["same_sender"] for c in ranked] == sorted(
+              [c["same_sender"] for c in ranked], reverse=True),
+          [c["same_sender"] for c in ranked])
+    check("fallback rows clear the similarity floor",
+          all(c["text_similarity"] >= FALLBACK_SIMILARITY
+              for c in ranked if not c["same_sender"]))
+    fb_ctx = [build_context(m, ds, stats) for m in ds.messages]
+    fb_used = sum(1 for c in fb_ctx
+                  if any(not e["same_sender"] for e in c["evidence_candidates"]))
+    check("fallback stays rare, not a back door", 0 < fb_used <= 15, fb_used)
+
+    print("\n[K is configurable]")
+    for k in (1, 3, 6, 10):
+        cands = shortlist(msg(ds, "msg_051"), ds, limit=k)
+        check("K=%d respected" % k, len(cands) <= k, len(cands))
+    check("K flows through build_context",
+          len(build_context(msg(ds, "msg_051"), ds, stats,
+                            shortlist_limit=2)["evidence_candidates"]) <= 2)
+    check("larger K yields at least as much evidence",
+          len(shortlist(msg(ds, "msg_051"), ds, limit=10))
+          >= len(shortlist(msg(ds, "msg_051"), ds, limit=3)))
+    check("K=0 yields nothing", shortlist(msg(ds, "msg_051"), ds, limit=0) == [])
+    check("strict mode flows through build_context",
+          all(e["same_sender"] for e in build_context(
+              msg(ds, "msg_066"), ds, stats, allow_fallback=False)["evidence_candidates"]))
+
     print("\n[evidence id mapping]")
     ids = evidence_ids_for(cands, [1, 3])
     check("indices map to real ids", ids == [cands[0]["message_id"], cands[2]["message_id"]])
@@ -184,8 +238,15 @@ def main():
           max(c["_meta"]["estimated_tokens"] for c in all_ctx))
     check("none needed truncation at default budget",
           not any(c["_meta"]["truncated"] for c in all_ctx))
-    check("every context has evidence candidates",
-          all(c["evidence_candidates"] for c in all_ctx))
+    # Evidence is filtered to the same sender/group/business, so a user with no
+    # prior contact from that counterpart correctly gets nothing to cite and the
+    # router will emit `none`. These 7 are exactly the rows with no same-counterpart
+    # history and no near-identical template anywhere else in their history.
+    empty = sorted(c["message"]["message_id"] for c in all_ctx if not c["evidence_candidates"])
+    check("exactly the no-history rows lack evidence",
+          empty == ["msg_089", "msg_090", "msg_092", "msg_093", "msg_094",
+                    "msg_095", "msg_096"], empty)
+    check("everything else has evidence", len(all_ctx) - len(empty) == 103)
     check("media-only rows still carry text signal absence",
           build_context(msg(ds, "msg_088"), ds, stats)["signals"]["text_is_empty"] is True)
 
