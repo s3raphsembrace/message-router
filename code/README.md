@@ -216,9 +216,10 @@ python code/preprocess/test_preprocess.py   # 56 assertions
 python code/context/test_context.py         # 98 assertions
 python code/router/test_router.py           # 148 assertions
 python code/guard/test_guard.py             # 57 assertions
+python code/evaluation/test_eval.py         # 61 assertions
 ```
 
-359 assertions total, no network and no API key.
+420 assertions total, no network and no API key.
 
 The real dataset is healthy in both stages — all 30 media files resolve, and no
 context exceeds the token budget — so the failure paths would otherwise never
@@ -497,3 +498,72 @@ by rule:
 > guard as the safe default (`digest`/`unknown`), so `quiet_hours` never fires
 > (it only acts on a `notify`) and `unknown` counts as low-value, which pushes
 > the caps to `mute`. The numbers will shift once the model client lands.
+
+## Evaluation
+
+```bash
+python code/evaluation/main.py                      # run the pipeline and score it
+python code/evaluation/main.py --no-guard           # score the router alone
+python code/evaluation/main.py --predictions p.csv  # score a saved run
+python code/evaluation/main.py --leak-check         # prove no label reaches the router
+```
+
+`sample_messages.csv` is the only labelled data. It is read **here, for scoring,
+and nowhere else** — the five answer columns are stripped from every row before it
+reaches context assembly or a prompt.
+
+`--leak-check` proves it structurally rather than by convention: it asserts the
+stripped row carries no label column, walks the assembled context for any key
+named like an answer field, and checks the gold `reason` text does not appear in
+the rendered prompt. A gold evidence id showing up as a *retrieved candidate* is
+not leakage — that is retrieval finding the same history a human found — so ids
+are deliberately not checked.
+
+### What it reports
+
+**Accuracy** — `action`, `message_type`, and both-correct.
+
+**Action confusion matrix**, with the two asymmetric failures called out
+separately rather than buried in an aggregate:
+
+- `gold notify → predicted mute` — the user missed something they needed
+- `gold mute → predicted notify` — the user was interrupted by junk, and worse
+  when the gold type was `scam`/`spam`
+
+These are also priced. `notify↔digest` and `digest↔mute` cost 1; the two
+inversions cost 5, with a further ×1.5 when a scam was promoted to `notify`. The
+run reports total and per-row weighted cost, so a change that trades two nuisance
+errors for one catastrophic one shows up as worse rather than neutral.
+
+**Evidence precision / recall / F1**, micro-averaged, plus exact-set-match and
+`none` agreement. Micro-averaging is the honest choice: most rows cite one id, so
+a macro average would be dominated by single-id luck and rows citing nothing would
+need an arbitrary convention.
+
+**Confidence calibration** — predictions binned by stated confidence against
+observed action accuracy per bin, with the gap and an Expected Calibration Error.
+A positive gap means stated confidence exceeds real accuracy.
+
+### Current numbers (placeholder input)
+
+No model client is wired, so these score the safe-default fallback plus the
+deterministic guard. They are a **floor and a proof the harness works, not a
+result** — the run prints a banner saying so.
+
+| | router alone (`--no-guard`) | with Layer 4 guard |
+|---|---|---|
+| action accuracy | 36.7% | **56.7%** |
+| weighted cost / row | 0.63 | **0.43** |
+| severe errors | 0 | 0 |
+
+That gap is the guard's measured contribution in isolation. Zero severe errors in
+both columns is structural, not luck: `digest` is the safe middle, so a
+defaulting pipeline cannot commit either inversion.
+
+Calibration already reads sensibly — the guard's 0.85–0.93 rows are 100% correct
+(ECE 0.058, and the high bins are *under*confident), because those rows are
+decided by verifiable facts rather than judgement.
+
+`message_type` accuracy is 3.3% for the obvious reason: every unguarded row is
+`unknown`. That number is the clearest single indicator of how much the missing
+router is worth.
