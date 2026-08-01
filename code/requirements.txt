@@ -1,0 +1,3 @@
+# Layer 1 (media preprocessing) - Gemini native audio + vision input.
+# Everything else in the pipeline uses the standard library only.
+google-genai>=1.0.0
