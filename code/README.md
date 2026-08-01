@@ -214,10 +214,10 @@ period is stated in the context so the router does not read it as "right now".
 ```bash
 python code/preprocess/test_preprocess.py   # 56 assertions
 python code/context/test_context.py         # 98 assertions
-python code/router/test_router.py           # 123 assertions
+python code/router/test_router.py           # 148 assertions
 ```
 
-277 assertions total, no network and no API key.
+302 assertions total, no network and no API key.
 
 The real dataset is healthy in both stages — all 30 media files resolve, and no
 context exceeds the token budget — so the failure paths would otherwise never
@@ -243,14 +243,55 @@ python code/router/run.py --show msg_066      # the exact prompt for one message
 python code/router/run.py --stats             # prompt sizes across all 110
 ```
 
-System prompt ~1,362 tokens (identical on every call, so it caches); user prompt
-min 294 / p50 792 / max 1,150. About 2,150 tokens per call.
+System prompt ~2,185 tokens (identical on every call, so it caches); user prompt
+min 294 / p50 801 / max 1,150. About 2,990 tokens per call.
 
-The prompt states the **precedence ladder explicitly** rather than leaving it to
-be inferred — risk floor, then direct-address override, then baseline — because
-the three rows it exists for all invert under a naive "weigh everything" reading:
-a scam inside a trusted group, an `@`-mention that is chain spam, and a verified
-sender on a mismatched domain.
+### Fixed reasoning order
+
+The prompt makes the model work through four stages in a fixed order and emit
+only at the end, rather than leaving the precedence to be inferred — the rows it
+exists for all invert under a naive "weigh everything" reading.
+
+| stage | question | terminal? |
+|---|---|---|
+| 1. **SAFETY** | is this unsafe for this user? | **yes** — mute/scam·spam, stop |
+| 2. **PREFERENCE** | has the user already said they don't want this? | no — records HARD or SOFT |
+| 3. **URGENCY / USEFULNESS** | what is actually being asked, and when? | no — records actionable or not |
+| 4. **VERDICT** | resolve 2 against 3, then emit | — |
+
+**Only safety short-circuits.** That is the load-bearing detail. If preference
+were also terminal, `msg_056` — *"@u_001 doctor appointment moved to 6 PM,
+confirm if you can leave by 5:15"*, in a group `u_001` has muted — would stop at
+stage 2 and be muted, contradicting the spec's own example of a muted family
+group carrying an urgent direct mention.
+
+So stage 2 records a *prior*, not a decision, and stage 4 resolves it:
+
+- **HARD** preference (explicit opt-out on promotional content, or a unanimously
+  reported sender) → `mute` outright. A standing instruction from the user.
+- **SOFT** preference (muted group, high dismissal rate, ignored repeats) **plus a
+  genuine actionable request** → `notify`. Muting a group is not the same as
+  refusing to be reached.
+- **SOFT** preference, no actionable request → `mute` if repetitive or unwanted,
+  `digest` if merely low priority.
+- No preference signal → decide on stage 3 alone.
+
+Stage 1 is written to fire *and* not to over-fire: it names unverified accounts
+asking for payment/OTP/KYC, mismatched sender domains combined with another risk
+signal, money-moving links and QR codes, and high-`forwarded_count` chain
+content — while stating outright that *"a domain mismatch on its own is not
+enough"* and *"do not manufacture risk"*.
+
+### reason must name the deciding signal
+
+The prompt requires one human-readable line naming **the signal that decided
+it** — not a summary of the message and not a restatement of the action — with
+worked good and bad examples:
+
+> ✅ "The sender's domain does not match the brand's and the account is 24 days old."
+> ✅ "The user is directly asked to confirm a 6 PM change, despite muting this group."
+> ❌ "This is a promotional message."  (describes, decides nothing)
+> ❌ "Muted because it is spam."  (restates the action)
 
 ### Evidence policy
 

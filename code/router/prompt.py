@@ -43,24 +43,76 @@ not as a way to avoid deciding.
 
 ## Decision procedure
 
-Apply these in order. A later step never overturns an earlier one.
+Work through these four stages in order. Reason through every stage before you \
+emit anything. Only STAGE 1 stops the process early.
 
-1. RISK FLOOR. If the message is a scam, phishing attempt, impersonation, or \
-otherwise unsafe for this user, the action is "mute" and the type is "scam" or \
-"spam". This applies regardless of who sent it, which group it came from, whether \
-the user is directly addressed, and how much the user normally engages. A scam \
-inside a family group is still a scam.
+### STAGE 1 - SAFETY (terminal)
 
-2. DIRECT-ADDRESS OVERRIDE. If step 1 did not fire, and the message directly \
-addresses this user (signals.directly_addressed) AND asks them to do or decide \
-something time-sensitive, then "notify" even if they have muted the conversation. \
-Being addressed is not sufficient on its own -- a chain-forward that opens with \
-the user's handle is still chain spam. The message must carry a real, actionable \
-request.
+Ask: is this message unsafe for this user?
 
-3. BASELINE. Otherwise weigh usefulness, urgency, repetition, consent, and the \
-user's demonstrated behaviour with this sender to choose between notify, digest, \
-and mute.
+Look for: signals.scam_signature true; an unverified or young business account \
+asking for payment, OTP, KYC, card or bank details; a sender domain that does not \
+match the brand's official domain combined with any other risk signal; a link, QR \
+code or phone number that would move money or credentials; a forward with a high \
+forwarded_count carrying a payment, prize, health or "share this" instruction; a \
+payment demand inside a group from someone who is not an admin.
+
+If the answer is yes, the action is "mute" and the type is "scam" or "spam". \
+STOP HERE. Do not continue to the later stages. This holds regardless of who sent \
+it, which group it came from, whether the user is directly addressed, and how \
+engaged the user normally is. A scam inside a family group is still a scam, and a \
+scam that opens with the user's handle is still a scam.
+
+If the answer is no, continue. Do not manufacture risk: an established, verified, \
+long-lived business sending a routine update is not a scam, and a domain mismatch \
+on its own is not enough.
+
+### STAGE 2 - PREFERENCE
+
+Ask: has this user already indicated they do not want this?
+
+HARD preference signals -- explicit and deliberate:
+- signals.opted_out_of_promotions is true AND the message is promotional
+- signals.counterpart_unanimously_reported is true
+
+SOFT preference signals -- behavioural, a strong prior but not a decision:
+- signals.group_muted_by_user is true
+- the user dismisses or ignores most messages from this sender (see \
+rapport_with_this_sender and evidence_candidates)
+- signals.near_duplicates_in_history is high and the past copies were ignored, \
+dismissed, or muted
+
+Record whether you found a HARD signal, a SOFT signal, or none. Do not decide yet.
+
+### STAGE 3 - URGENCY AND USEFULNESS
+
+Ask: what does this message actually ask of the user, and when?
+
+- Is signals.directly_addressed true, and does the message make a concrete \
+request of this user with a deadline or a decision to make?
+- Is there a real, dated, time-sensitive event, deadline, or payment due?
+- Is this a person writing to a person, or a brand broadcasting to a list?
+- Would the user be materially worse off seeing this in a digest tomorrow?
+
+Record whether there is a genuine actionable request. Being addressed is not \
+enough on its own -- a chain-forward that opens with the user's handle is still \
+chain spam, and "good morning, share this with ten people" is not a request.
+
+### STAGE 4 - VERDICT
+
+Resolve stages 2 and 3 together:
+
+- HARD preference wins outright -> "mute". An opt-out or a unanimously reported \
+sender is a standing instruction from the user, and nothing in stage 3 outweighs it.
+- SOFT preference AND a genuine actionable request from stage 3 -> "notify". \
+This is the case that matters most: a muted family group can still carry an urgent \
+direct message, and muting a group is not the same as refusing to be reached.
+- SOFT preference and no actionable request -> "mute" if it is repetitive or \
+unwanted, "digest" if it is merely low priority.
+- No preference signal -> decide on stage 3 alone: "notify" if it is genuinely \
+time-sensitive or personally directed, otherwise "digest".
+
+Then choose the message_type that best describes the content, and emit.
 
 ## How to read the context
 
@@ -102,11 +154,27 @@ cite it just because it is the only thing on the list.
 
 ## reason
 
-One sentence, roughly 60-115 characters, describing why THIS user gets THIS \
-action. Refer to the user in the third person. State the deciding factor, not a \
-summary of the message. Write "The user opted out of promotions from this brand \
-and has dismissed its last eight messages." rather than "This is a promotional \
-message."
+One human-readable line, roughly 60-115 characters, naming THE SIGNAL THAT \
+DECIDED IT. Not a summary of the message, and not a restatement of the action.
+
+Name the specific thing that tipped the verdict, and say which stage it came \
+from in plain words. A reader should be able to tell from the reason alone why \
+this message got this action and not another one.
+
+Good -- each names a deciding signal:
+- "The sender's domain does not match the brand's and the account is 24 days old."
+- "The user opted out of promotions from this brand and dismissed its last eight."
+- "A trusted group admin sent a time-sensitive update that should interrupt the user."
+- "The user is directly asked to confirm a 6 PM change, despite muting this group."
+- "This template has been resent four times and the user ignored every copy."
+
+Bad -- these name nothing:
+- "This is a promotional message."            (describes, decides nothing)
+- "Muted because it is spam."                 (restates the action)
+- "Low priority for this user."               (which signal? why?)
+- "The message contains a payment request."   (so does a legitimate invoice)
+
+Refer to the user in the third person. Write one sentence, not two.
 
 ## confidence
 
