@@ -1,13 +1,13 @@
 message_id,action,message_type,reason,confidence,evidence_message_ids
 msg_023,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_091,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
+msg_091,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,none
 msg_090,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_048,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_040,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
+msg_040,mute,unknown,The user has muted this conversation and the message carries no direct request.,0.85,none
 msg_075,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_005,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_104,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_069,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
+msg_069,mute,unknown,The user has muted this conversation and the message carries no direct request.,0.85,none
 msg_107,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_070,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_003,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
@@ -16,89 +16,89 @@ msg_008,digest,unknown,"Routing could not be validated for this message, so it w
 msg_092,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_060,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_004,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_030,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
+msg_030,mute,unknown,The user has muted this conversation and the message carries no direct request.,0.85,none
 msg_045,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_052,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_009,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
+msg_052,mute,scam,"Sender uses talabat-refund.com instead of the brand's talabat.com, is unverified, and has 61 reports.",0.93,none
+msg_009,mute,unknown,The user has muted this conversation and the message carries no direct request.,0.85,none
 msg_071,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_016,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
+msg_016,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,none
 msg_065,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_038,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_086,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_014,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
+msg_014,mute,unknown,The user opted out of promotions from this brand on 2026-07-17 23:55.,0.88,none
 msg_094,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_029,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_105,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_002,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_010,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_078,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
+msg_078,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,none
 msg_013,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_018,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
+msg_018,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,none
 msg_044,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_032,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_106,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_006,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_109,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_108,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_019,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_088,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_056,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
+msg_108,mute,scam,"Sender uses chase-secure-alert.com instead of the brand's chase.com, is unverified, and has 55 reports.",0.93,none
+msg_019,mute,scam,"Sender uses chase-secure-alert.com instead of the brand's chase.com, is unverified, and has 55 reports.",0.93,none
+msg_088,mute,unknown,The user has muted this conversation and the message carries no direct request.,0.85,none
+msg_056,mute,unknown,The user has muted this conversation and the message carries no direct request.,0.85,none
 msg_027,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_050,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_083,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_063,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
+msg_063,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,none
 msg_033,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_061,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
+msg_061,mute,unknown,The user has muted this conversation and the message carries no direct request.,0.85,none
 msg_020,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_017,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_058,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_026,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
+msg_017,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,none
+msg_058,mute,unknown,The user has muted this conversation and the message carries no direct request.,0.85,none
+msg_026,mute,scam,"Sender uses amazonpay-delivery.in instead of the brand's amazon.in, is unverified, and has 47 reports.",0.93,none
 msg_047,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_046,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
+msg_046,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,none
 msg_042,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_079,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_098,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_037,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_007,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_085,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
+msg_085,mute,scam,"Sender uses hdfcbank-kyc.in instead of the brand's hdfc.bank.in, is unverified, and has 38 reports.",0.93,none
 msg_001,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_021,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_028,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
+msg_028,mute,unknown,The user opted out of promotions from this brand on 2026-07-17 23:55.,0.88,none
 msg_012,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_064,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
+msg_064,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,none
 msg_103,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_031,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_057,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_087,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
+msg_087,mute,unknown,The user has muted this conversation and the message carries no direct request.,0.85,none
 msg_067,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_039,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_082,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_066,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
+msg_066,mute,unknown,The user opted out of promotions from this brand on 2026-07-17 23:55.,0.88,none
 msg_049,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_015,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_051,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
+msg_051,mute,unknown,The user opted out of promotions from this brand on 2026-07-17 23:55.,0.88,none
 msg_097,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_089,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_053,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_059,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_024,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
+msg_024,mute,unknown,The user opted out of promotions from this brand on 2026-07-17 23:55.,0.88,none
 msg_072,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_036,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_076,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
+msg_036,mute,scam,"Sender uses razorpayx-payouts.com instead of the brand's razorpayx.com, is unverified, and has 20 reports.",0.93,none
+msg_076,mute,scam,"Sender uses talabat-refund.com instead of the brand's talabat.com, is unverified, and has 61 reports.",0.93,none
 msg_055,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_102,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_080,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_093,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_034,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
+msg_034,mute,unknown,The user has muted this conversation and the message carries no direct request.,0.85,none
 msg_035,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_101,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_041,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_011,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_110,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
+msg_011,mute,unknown,The user has muted this conversation and the message carries no direct request.,0.85,none
+msg_110,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,none
 msg_095,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_074,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_073,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_054,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
+msg_074,mute,unknown,The user has muted this conversation and the message carries no direct request.,0.85,none
+msg_073,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,none
+msg_054,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,none
 msg_068,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_100,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_062,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
@@ -107,5 +107,5 @@ msg_043,digest,unknown,"Routing could not be validated for this message, so it w
 msg_077,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_081,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
 msg_025,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_084,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
+msg_084,mute,unknown,The user opted out of promotions from this brand on 2026-07-17 23:55.,0.88,none
 msg_022,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none

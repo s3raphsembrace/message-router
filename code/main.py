@@ -21,15 +21,20 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(HERE)
 sys.path.insert(0, os.path.join(HERE, "context"))
 sys.path.insert(0, os.path.join(HERE, "router"))
+sys.path.insert(0, os.path.join(HERE, "guard"))
 
 from aggregates import build_reaction_stats                    # noqa: E402
+from apply import apply_guard_all                              # noqa: E402
 from assemble import DEFAULT_TOKEN_BUDGET, build_context       # noqa: E402
+from audit import report as audit_report, write_audit          # noqa: E402
 from loaders import DEFAULT_DATASET, DEFAULT_MEDIA_CACHE, Dataset  # noqa: E402
 from retrieve import DEFAULT_SHORTLIST                         # noqa: E402
 from route import MAX_REASKS, RouteStats, route_all            # noqa: E402
+from rules import REPORTED_POLICY_ANY, REPORTED_POLICY_UNANIMOUS, GuardPolicy  # noqa: E402
 from writer import verify_output, write_output                 # noqa: E402
 
 DEFAULT_OUTPUT = os.path.join(REPO_ROOT, "dataset", "output.csv")
+DEFAULT_AUDIT = os.path.join(REPO_ROOT, "cache", "override_audit.csv")
 
 
 def build_model_callable():
@@ -50,6 +55,16 @@ def main(argv=None):
     ap.add_argument("--top-k", type=int, default=DEFAULT_SHORTLIST)
     ap.add_argument("--same-sender-only", action="store_true")
     ap.add_argument("--max-reasks", type=int, default=MAX_REASKS)
+    ap.add_argument("--audit", default=DEFAULT_AUDIT,
+                    help="where to write the override audit log")
+    ap.add_argument("--reported-policy", default=REPORTED_POLICY_UNANIMOUS,
+                    choices=[REPORTED_POLICY_UNANIMOUS, REPORTED_POLICY_ANY],
+                    help="'unanimous' (default): mute only when every past message from "
+                         "the sender was reported and none opened. 'any': mute if the user "
+                         "ever reported the sender -- fires on ~54%% of rows and contradicts "
+                         "two labelled samples.")
+    ap.add_argument("--no-guard", action="store_true",
+                    help="skip the deterministic override layer entirely")
     ap.add_argument("--verify-only", action="store_true",
                     help="verify an existing output.csv without rewriting it")
     args = ap.parse_args(argv)
@@ -89,12 +104,25 @@ def main(argv=None):
 
     decisions, stats = route_all(dataset.messages, contexts, call_model,
                                  RouteStats(), args.max_reasks)
+    print(stats.report())
+    print("")
+
+    records = []
+    if args.no_guard:
+        print("guard: SKIPPED (--no-guard)")
+    else:
+        policy = GuardPolicy(reported_policy=args.reported_policy)
+        decisions, records = apply_guard_all(decisions, contexts, policy)
+        print("Layer 4 - deterministic override guard (reported-policy=%s)"
+              % args.reported_policy)
+        print(audit_report(records, len(message_ids)))
+        if records:
+            write_audit(records, args.audit)
+            print("audit log -> %s" % args.audit)
+    print("")
 
     rows = {mid: d.to_row() for mid, d in decisions.items()}
     write_output(rows, message_ids, args.out)
-
-    print(stats.report())
-    print("")
     print("wrote %s" % args.out)
 
     problems = verify_output(args.out, message_ids)

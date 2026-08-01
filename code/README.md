@@ -7,7 +7,7 @@ Pipeline layers:
 | 1. Multimodal preprocessing | `code/preprocess/` | built |
 | 2. Context assembly | `code/context/` | built |
 | 3. LLM router | `code/router/` | prompt, validator, re-ask loop, writer; **model client next** |
-| 4. Deterministic guard | `code/guard/` | not yet |
+| 4. Deterministic guard | `code/guard/` | built |
 
 Design evidence for every threshold below lives in [`code/analysis/`](analysis/).
 
@@ -215,9 +215,10 @@ period is stated in the context so the router does not read it as "right now".
 python code/preprocess/test_preprocess.py   # 56 assertions
 python code/context/test_context.py         # 98 assertions
 python code/router/test_router.py           # 148 assertions
+python code/guard/test_guard.py             # 57 assertions
 ```
 
-302 assertions total, no network and no API key.
+359 assertions total, no network and no API key.
 
 The real dataset is healthy in both stages — all 30 media files resolve, and no
 context exceeds the token budget — so the failure paths would otherwise never
@@ -408,3 +409,91 @@ failed re-ask, since no call was made.
 > contract-valid — which proves the plumbing — but contains no real routing. The
 > run prints a loud banner saying so. Re-run `python code/main.py` once the
 > client lands.
+
+## Layer 4 — deterministic override guard
+
+```bash
+python code/main.py                          # guard on by default
+python code/main.py --no-guard               # skip it
+python code/main.py --reported-policy any    # broad reported-sender rule (see below)
+```
+
+Runs after the router and **can only make things safer or respect an explicit
+preference**. That is enforced, not trusted: `apply.py` raises if any rule tries
+to promote a row, and the whole ladder is asserted monotonic across all 110
+messages × 3 starting actions in the test suite.
+
+`notify → digest → mute`, never the other way.
+
+| # | rule | effect | terminal |
+|---|---|---|---|
+| 1 | `scam_signature` | force `mute` + type `scam` | yes |
+| 2 | `reported_sender` | force `mute` + type `spam`/`scam` | yes |
+| 3 | `opted_out_promotions` | cap at `digest`, `mute` if low-value | no |
+| 4 | `muted_by_user` | cap at `digest`, `mute` if low-value | no |
+| 5 | `quiet_hours` | `notify` → `digest`, with carve-outs | no |
+
+**Quiet-hours carve-outs:** an urgent or payment message that directly addresses
+the user, or a payment from a group admin or verified business. Nothing flagged
+`scam_signature` is ever exempt — the scam rule is terminal so that is
+unreachable in the full ladder, but the exemption must not depend on another rule
+having run first.
+
+**`muted_by_user` is a cap, not a force,** and it steps aside entirely for a
+directly-addressed `urgent`/`payment`/`event`/`personal` message. `msg_056` — the
+doctor's-appointment change inside a muted family group — stays `notify`. Muting
+a group is not the same as refusing to be reached.
+
+### Overridden rows are rewritten whole
+
+When a rule changes the action it also rewrites `reason` and `confidence`. A row
+reading `action=mute` under the model's original *"trusted delivery update from a
+business the user orders from"* would be self-contradicting, and both `reason`
+and confidence calibration are graded.
+
+### `--reported-policy`, and why the default is narrow
+
+`unanimous` (default) fires only when **every** past message from that sender was
+reported and **none** was ever opened. `any` fires if the user ever reported the
+sender.
+
+Measured on this dataset:
+
+| policy | `reported_sender` fires on | labelled samples broken |
+|---|---|---|
+| `unanimous` | 11 rows | 0 |
+| `any` | 27 rows | **1** |
+
+`any` flips `sample_msg_001` from its labelled `notify/urgent` to `mute/spam` —
+that is the water-tanker message, from a group the user has reported once but
+**opens 19 times out of 21**. The knob is there if you want it; the default is
+narrow for that reason.
+
+### Audit log
+
+Every firing is written to `cache/override_audit.csv` with the model's verdict
+beside the rule's, so disagreements can be reviewed row by row:
+
+```
+message_id, rule, from_action, to_action, from_type, to_type,
+from_confidence, to_confidence, disagreement, model_fell_back,
+model_reason, rule_reason
+```
+
+and summarised per run:
+
+```
+override records   : 36
+messages touched   : 36 / 110
+messages where the rules contradicted the model: 36
+by rule:
+  muted_by_user            fired=12   contradicted_model=12
+  reported_sender          fired=11   contradicted_model=11
+  scam_signature           fired=7    contradicted_model=7
+  opted_out_promotions     fired=6    contradicted_model=6
+```
+
+> Those counts are against placeholder input — every row currently enters the
+> guard as the safe default (`digest`/`unknown`), so `quiet_hours` never fires
+> (it only acts on a `notify`) and `unknown` counts as low-value, which pushes
+> the caps to `mute`. The numbers will shift once the model client lands.
