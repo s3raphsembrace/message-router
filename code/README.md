@@ -216,10 +216,10 @@ python code/preprocess/test_preprocess.py   # 56 assertions
 python code/context/test_context.py         # 98 assertions
 python code/router/test_router.py           # 148 assertions
 python code/guard/test_guard.py             # 57 assertions
-python code/evaluation/test_eval.py         # 61 assertions
+python code/evaluation/test_eval.py         # 97 assertions
 ```
 
-420 assertions total, no network and no API key.
+456 assertions total, no network and no API key.
 
 The real dataset is healthy in both stages — all 30 media files resolve, and no
 context exceeds the token budget — so the failure paths would otherwise never
@@ -567,3 +567,64 @@ decided by verifiable facts rather than judgement.
 `message_type` accuracy is 3.3% for the obvious reason: every unguarded row is
 `unknown`. That number is the clearest single indicator of how much the missing
 router is worth.
+
+### Run ledger — deltas, not vibes
+
+Every prompt or rule change ends with a recorded run. The ledger is
+`code/evaluation/runs.csv`, append-only and committed, so a change that made
+things worse stays in the history.
+
+```bash
+python code/evaluation/main.py --record "prompt: four-stage reasoning order"
+python code/evaluation/main.py --history
+python code/evaluation/main.py --no-guard --record "ablation: guard off"
+```
+
+Recording prints the delta against the previous run, per metric, with direction
+resolved correctly (accuracy up is better; ECE, weighted cost and severe-error
+counts *down* is better):
+
+```
+delta vs run #1 (baseline: no model wired, guard on):
+  action_acc         WORSE   -20.0pp (56.7% -> 36.7%)
+  ece                WORSE   +0.075  (0.058 -> 0.133)
+  cost_per_row       WORSE   +0.200  (0.433 -> 0.633)
+  severe_suppressed  noise   +0   (0 -> 0)
+```
+
+Each run records the git SHA and the config (`guard=on;reported=unanimous;
+model=none`) so a number can always be traced back to the code and settings that
+produced it.
+
+#### Noise floor
+
+There are **30 labelled rows, so one row is 3.33 percentage points.** Any accuracy
+delta smaller than that is a single row moving and is reported as `noise`, not as
+an improvement. ECE and cost are continuous and get their own floors (0.02 and
+0.05). This is enforced in `delta()`, not left to the reader.
+
+#### Trade-off detection
+
+The reason for keeping a ledger at all: an accuracy gain paid for elsewhere is not
+obviously a gain, and it is easy to miss when reading one number at a time. These
+are flagged explicitly:
+
+| pattern | warning |
+|---|---|
+| action-acc up, ECE up | *"being right more often while its stated confidence means less"* |
+| action-acc up, evidence F1 down | *"decisions are better, their justifications are not"* |
+| action-acc up, severe errors up | *"aggregate accuracy is hiding a worse failure mode"* |
+| action-acc down, ECE down | *"check whether the model simply became less confident"* |
+| cost/row up, action-acc not down | *"the mistakes that remain are the expensive kind"* |
+
+#### History so far
+
+```
+run  sha       change                              act-acc  typ-acc    ev-F1      ECE cost/row
+----------------------------------------------------------------------------------------------
+1    c76e6e0   baseline: no model wired, guard on    56.7%     3.3%      -      0.058    0.433
+2    c76e6e0   ablation: Layer 4 guard disabled      36.7%     3.3%      -      0.133    0.633
+                 vs prev                            -20.0!    +0.0~           +0.075!  +0.200!
+
+* better   ! worse   ~ within noise (< 3.3pp accuracy = 1 of 30 rows)
+```

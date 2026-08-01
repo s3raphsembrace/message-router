@@ -41,7 +41,17 @@ from metrics import (                                         # noqa: E402
 )
 from prompt import render                                     # noqa: E402
 from route import RouteStats, route_all                       # noqa: E402
+from ledger import (                                          # noqa: E402
+    append_run,
+    compare,
+    git_sha,
+    history_table,
+    load_runs,
+    tradeoffs,
+)
 from rules import REPORTED_POLICY_ANY, REPORTED_POLICY_UNANIMOUS, GuardPolicy  # noqa: E402
+
+DEFAULT_LEDGER = os.path.join(HERE, "runs.csv")
 
 # The five columns that exist only in sample_messages.csv. They must never travel
 # into context assembly or a prompt.
@@ -119,7 +129,20 @@ def main(argv=None):
                     choices=[REPORTED_POLICY_UNANIMOUS, REPORTED_POLICY_ANY])
     ap.add_argument("--leak-check", action="store_true",
                     help="verify no label reaches the router, then exit")
+    ap.add_argument("--ledger", default=DEFAULT_LEDGER,
+                    help="append-only record of evaluation runs")
+    ap.add_argument("--record", default="",
+                    help="append this run to the ledger, described by this string "
+                         "(e.g. \"prompt: four-stage reasoning order\")")
+    ap.add_argument("--notes", default="", help="free-text note stored with a recorded run")
+    ap.add_argument("--history", action="store_true",
+                    help="print the run history with deltas, then exit")
     args = ap.parse_args(argv)
+
+    if args.history:
+        runs = load_runs(args.ledger)
+        print(history_table(runs))
+        return 0
 
     dataset = Dataset(args.dataset, args.media_cache)
     samples = dataset.samples
@@ -263,6 +286,71 @@ def main(argv=None):
     if cal["overconfident_bins"]:
         print("  %d bin(s) overconfident by more than 0.10" % cal["overconfident_bins"])
     print("  (positive gap = stated confidence exceeds observed accuracy)")
+
+    # ---- ledger ------------------------------------------------------
+    if args.record:
+        import datetime as _dt
+        config = "guard=%s;reported=%s;model=%s" % (
+            "off" if args.no_guard else "on",
+            args.reported_policy,
+            "none" if (not args.predictions and build_model_callable() is None) else "wired",
+        )
+        record = {
+            "timestamp": _dt.datetime.now().replace(microsecond=0).isoformat(),
+            "git_sha": git_sha(),
+            "change": args.record,
+            "config": config,
+            "action_acc": round(act_acc, 4),
+            "type_acc": round(typ_acc, 4),
+            "joint_acc": round(joint, 4),
+            "evidence_f1": "" if ev["f1"] is None else round(ev["f1"], 4),
+            "evidence_precision": "" if ev["precision"] is None else round(ev["precision"], 4),
+            "evidence_recall": "" if ev["recall"] is None else round(ev["recall"], 4),
+            "evidence_exact": round(ev["exact_match"], 4),
+            "ece": round(cal["ece"], 4),
+            "cost_per_row": round(cost["per_row"], 4),
+            "severe_suppressed": len(sev["suppressed_notify"]),
+            "severe_intruded": len(sev["intruding_mute"]),
+            "n_rows": len(samples),
+            "notes": args.notes,
+        }
+        previous = load_runs(args.ledger)
+        prev_row = previous[-1] if previous else None
+        run_number = append_run(args.ledger, record)
+
+        print("\n" + "=" * 76)
+        print("RECORDED as run #%d -> %s" % (run_number, args.ledger))
+        print("=" * 76)
+
+        current = load_runs(args.ledger)[-1]
+        if prev_row is None:
+            print("first recorded run -- no baseline to compare against yet")
+        else:
+            comparison = compare(prev_row, current)
+            print("\ndelta vs run #%s (%s):" % (prev_row["run"], prev_row.get("change", "")[:40]))
+            for metric, info in comparison.items():
+                if info["verdict"] == "new":
+                    continue
+                mark = {"better": "BETTER", "worse": "WORSE ", "noise": "noise "}[info["verdict"]]
+                if metric in ("severe_suppressed", "severe_intruded"):
+                    print("  %-18s %s  %+d   (%d -> %d)" % (
+                        metric, mark, info["delta"], info["previous"], info["current"]))
+                elif metric in ("ece", "cost_per_row"):
+                    print("  %-18s %s  %+.3f  (%.3f -> %.3f)" % (
+                        metric, mark, info["delta"], info["previous"], info["current"]))
+                else:
+                    print("  %-18s %s  %+.1fpp (%.1f%% -> %.1f%%)" % (
+                        metric, mark, info["delta"] * 100,
+                        info["previous"] * 100, info["current"] * 100))
+            warnings = tradeoffs(comparison)
+            if warnings:
+                print("\nTRADE-OFFS:")
+                for w in warnings:
+                    print("  ! %s" % w)
+            else:
+                print("\nno trade-offs detected between accuracy, calibration and evidence")
+
+        print("\n" + history_table(load_runs(args.ledger)))
 
     if not args.predictions and build_model_callable() is None:
         print("\n" + "!" * 72)

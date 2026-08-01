@@ -8,7 +8,9 @@ predictions can be confidently wrong.
 """
 
 import os
+import shutil
 import sys
+import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CODE = os.path.dirname(HERE)
@@ -18,6 +20,7 @@ for _sub in ("context", "router", "guard"):
 
 from aggregates import build_reaction_stats                   # noqa: E402
 from loaders import Dataset                                   # noqa: E402
+import ledger                                                 # noqa: E402
 from main import LABEL_COLUMNS, leak_check, strip_labels      # noqa: E402
 from main import main as eval_main                            # noqa: E402
 from metrics import (                                         # noqa: E402
@@ -162,10 +165,118 @@ def main():
     problems = leak_check(ds, ds.samples, stats)
     check("no label reaches any prompt, across all 30 rows", problems == [], problems[:3])
 
+    print("\n[ledger: deltas and direction]")
+    raw, verdict = ledger.delta("action_acc", 0.50, 0.60)
+    check("accuracy up is better", verdict == "better" and abs(raw - 0.10) < 1e-9)
+    check("accuracy down is worse", ledger.delta("action_acc", 0.60, 0.50)[1] == "worse")
+    check("ECE down is better (lower is better)",
+          ledger.delta("ece", 0.20, 0.10)[1] == "better")
+    check("ECE up is worse", ledger.delta("ece", 0.10, 0.20)[1] == "worse")
+    check("cost down is better", ledger.delta("cost_per_row", 0.6, 0.4)[1] == "better")
+    check("severe errors up is worse",
+          ledger.delta("severe_suppressed", 0, 2)[1] == "worse")
+    check("first run has no baseline", ledger.delta("action_acc", None, 0.5)[1] == "new")
+
+    print("\n[ledger: n=30 noise floor]")
+    check("floor is one row of thirty", abs(ledger.ACCURACY_FLOOR - 1.0 / 30) < 1e-9)
+    check("sub-one-row change is noise",
+          ledger.delta("action_acc", 0.500, 0.520)[1] == "noise",
+          "2pp is less than one row")
+    check("one full row is not noise",
+          ledger.delta("action_acc", 0.500, 0.534)[1] == "better")
+    check("tiny ECE change is noise", ledger.delta("ece", 0.100, 0.105)[1] == "noise")
+    check("meaningful ECE change is not", ledger.delta("ece", 0.100, 0.140)[1] == "worse")
+
+    print("\n[ledger: trade-off detection]")
+    warn = ledger.tradeoffs(ledger.compare(
+        {"action_acc": 0.50, "ece": 0.05, "evidence_f1": 0.8, "cost_per_row": 0.4,
+         "severe_suppressed": 0, "severe_intruded": 0, "type_acc": 0.5, "joint_acc": 0.4},
+        {"action_acc": 0.70, "ece": 0.15, "evidence_f1": 0.8, "cost_per_row": 0.4,
+         "severe_suppressed": 0, "severe_intruded": 0, "type_acc": 0.5, "joint_acc": 0.4}))
+    check("accuracy up + calibration worse is flagged",
+          any("calibration got WORSE" in w for w in warn), warn)
+    warn = ledger.tradeoffs(ledger.compare(
+        {"action_acc": 0.50, "ece": 0.05, "evidence_f1": 0.80, "cost_per_row": 0.4,
+         "severe_suppressed": 0, "severe_intruded": 0, "type_acc": 0.5, "joint_acc": 0.4},
+        {"action_acc": 0.70, "ece": 0.05, "evidence_f1": 0.50, "cost_per_row": 0.4,
+         "severe_suppressed": 0, "severe_intruded": 0, "type_acc": 0.5, "joint_acc": 0.4}))
+    check("accuracy up + evidence worse is flagged",
+          any("evidence F1 got WORSE" in w for w in warn), warn)
+    warn = ledger.tradeoffs(ledger.compare(
+        {"action_acc": 0.50, "ece": 0.05, "evidence_f1": 0.8, "cost_per_row": 0.4,
+         "severe_suppressed": 0, "severe_intruded": 0, "type_acc": 0.5, "joint_acc": 0.4},
+        {"action_acc": 0.70, "ece": 0.05, "evidence_f1": 0.8, "cost_per_row": 0.4,
+         "severe_suppressed": 3, "severe_intruded": 0, "type_acc": 0.5, "joint_acc": 0.4}))
+    check("accuracy up + severe errors up is flagged",
+          any("severe errors increased" in w for w in warn), warn)
+    warn = ledger.tradeoffs(ledger.compare(
+        {"action_acc": 0.50, "ece": 0.05, "evidence_f1": 0.8, "cost_per_row": 0.4,
+         "severe_suppressed": 0, "severe_intruded": 0, "type_acc": 0.5, "joint_acc": 0.4},
+        {"action_acc": 0.51, "ece": 0.05, "evidence_f1": 0.8, "cost_per_row": 0.7,
+         "severe_suppressed": 0, "severe_intruded": 0, "type_acc": 0.5, "joint_acc": 0.4}))
+    check("cost worse without accuracy dropping is flagged",
+          any("expensive kind" in w for w in warn), warn)
+    clean = ledger.tradeoffs(ledger.compare(
+        {"action_acc": 0.50, "ece": 0.10, "evidence_f1": 0.5, "cost_per_row": 0.6,
+         "severe_suppressed": 2, "severe_intruded": 1, "type_acc": 0.5, "joint_acc": 0.4},
+        {"action_acc": 0.70, "ece": 0.05, "evidence_f1": 0.8, "cost_per_row": 0.3,
+         "severe_suppressed": 0, "severe_intruded": 0, "type_acc": 0.6, "joint_acc": 0.5}))
+    check("an across-the-board win raises no warning", clean == [], clean)
+
+    print("\n[ledger: persistence]")
+    tmpdir = tempfile.mkdtemp(prefix="ledger_")
+    try:
+        path = os.path.join(tmpdir, "runs.csv")
+        base = {"timestamp": "t", "git_sha": "abc1234", "change": "first", "config": "c",
+                "action_acc": 0.5, "type_acc": 0.5, "joint_acc": 0.4, "evidence_f1": 0.6,
+                "evidence_precision": 0.6, "evidence_recall": 0.6, "evidence_exact": 0.5,
+                "ece": 0.1, "cost_per_row": 0.5, "severe_suppressed": 0,
+                "severe_intruded": 0, "n_rows": 30, "notes": ""}
+        check("first append is run 1", ledger.append_run(path, base) == 1)
+        second = dict(base, change="second", action_acc=0.7)
+        check("second append is run 2", ledger.append_run(path, second) == 2)
+        runs = ledger.load_runs(path)
+        check("both runs persisted", len(runs) == 2)
+        check("run numbers are sequential", [r["run"] for r in runs] == [1, 2])
+        check("floats are parsed back", isinstance(runs[0]["action_acc"], float))
+        check("history never rewrites an earlier run",
+              runs[0]["change"] == "first" and runs[0]["action_acc"] == 0.5)
+        check("a regression stays in the history",
+              ledger.append_run(path, dict(base, change="regression", action_acc=0.2)) == 3
+              and ledger.load_runs(path)[2]["action_acc"] == 0.2)
+        table = ledger.history_table(ledger.load_runs(path))
+        check("table renders every run", table.count("\n") > 3)
+        check("worse deltas are marked", "!" in table)
+        check("better deltas are marked", "*" in table)
+        # scoped to the delta rows: the header underline is a long run of dashes
+        delta_rows = [ln for ln in table.splitlines() if "vs prev" in ln]
+        check("delta rows exist", len(delta_rows) >= 2, len(delta_rows))
+        check("delta sign is not doubled",
+              all("--" not in ln and "++" not in ln for ln in delta_rows), delta_rows)
+        check("noise floor is documented in the legend", "1 of 30 rows" in table)
+        check("empty ledger degrades gracefully",
+              ledger.history_table([]) == "no runs recorded yet")
+        check("missing ledger file returns no runs",
+              ledger.load_runs(os.path.join(tmpdir, "nope.csv")) == [])
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
     print("\n[harness end to end]")
     check("scoring run exits 0", eval_main([]) == 0)
     check("leak-check run exits 0", eval_main(["--leak-check"]) == 0)
     check("no-guard run exits 0", eval_main(["--no-guard"]) == 0)
+    check("history run exits 0", eval_main(["--history"]) == 0)
+    tmpdir = tempfile.mkdtemp(prefix="ledger_e2e_")
+    try:
+        path = os.path.join(tmpdir, "runs.csv")
+        check("recording run exits 0",
+              eval_main(["--ledger", path, "--record", "test run"]) == 0)
+        check("recorded run landed in the ledger", len(ledger.load_runs(path)) == 1)
+        check("second recording computes a delta",
+              eval_main(["--ledger", path, "--record", "test run 2", "--no-guard"]) == 0
+              and len(ledger.load_runs(path)) == 2)
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
 
     print("\n%d passed, %d failed" % (len(PASSED), len(FAILED)))
     if FAILED:
