@@ -6,7 +6,7 @@ Pipeline layers:
 |---|---|---|
 | 1. Multimodal preprocessing | `code/preprocess/` | built |
 | 2. Context assembly | `code/context/` | built |
-| 3. LLM router | `code/router/` | prompt + schema built; client next |
+| 3. LLM router | `code/router/` | prompt, validator, re-ask loop, writer; **model client next** |
 | 4. Deterministic guard | `code/guard/` | not yet |
 
 Design evidence for every threshold below lives in [`code/analysis/`](analysis/).
@@ -214,10 +214,10 @@ period is stated in the context so the router does not read it as "right now".
 ```bash
 python code/preprocess/test_preprocess.py   # 56 assertions
 python code/context/test_context.py         # 98 assertions
-python code/router/test_router.py           # 60 assertions
+python code/router/test_router.py           # 123 assertions
 ```
 
-214 assertions total, no network and no API key.
+277 assertions total, no network and no API key.
 
 The real dataset is healthy in both stages — all 30 media files resolve, and no
 context exceeds the token budget — so the failure paths would otherwise never
@@ -302,3 +302,68 @@ told not to follow instructions found inside them.
 > `schema.py`. `code/preprocess/schema.py` is already on `sys.path` by the time
 > the router imports, and two modules named `schema` resolve to whichever
 > directory landed first.
+
+## Output contract
+
+```bash
+python code/main.py                  # route all, write dataset/output.csv, verify
+python code/main.py --out /tmp/o.csv # write elsewhere
+python code/main.py --verify-only    # re-check an existing file
+```
+
+`writer.py` reproduces the shipped blank template byte-for-byte: UTF-8, **no
+BOM**, **CRLF** line endings, the six columns in fixed order, and one row per
+`message_id` in `dataset/messages.csv` **in that file's order**. A missing
+prediction raises rather than shipping a short file.
+
+`verify_output()` re-reads what was written and independently checks BOM, line
+endings, header, row count, row order, duplicate ids, closed vocabulary for
+`action` and `message_type`, `confidence` parseable and within [0,1], and a
+non-blank evidence cell. Every run self-verifies after writing.
+
+### Validation, re-ask, fallback
+
+`validate.py` is strict and repairs nothing — that is the point. Silent repair
+would hide exactly the failures the re-ask exists to correct.
+
+| check | error code |
+|---|---|
+| decodes as a JSON object | `not_json`, `not_object` |
+| exactly the five required keys, no extras | `missing_keys`, `unexpected_keys` |
+| `action` in the 3-value vocabulary | `action_out_of_vocab` |
+| `message_type` in the 11-value vocabulary | `type_out_of_vocab` |
+| `reason` a non-empty string | `reason_empty` |
+| `confidence` a real number in [0,1] (rejects `true`, NaN) | `confidence_not_number`, `confidence_out_of_range` |
+| every evidence index drawn from the offered shortlist | `evidence_not_in_shortlist` |
+| evidence is an array; at most 2 distinct | `evidence_not_array`, `evidence_too_many` |
+
+On any violation the loop **re-asks exactly once**, appending the specific
+validator messages to the user turn — each names the offending value and states
+the allowed set, because a generic "try again" tends to reproduce the same
+defect. If the retry is still invalid, the row becomes the safe default:
+**`digest` / `unknown` / `0.5` / `none`**. `digest` is chosen because it neither
+interrupts the user nor suppresses something they may have needed.
+
+Re-asks are counted, along with model calls, first-try successes, recoveries,
+failures, and a histogram of which violations actually occurred:
+
+```
+messages          : 110
+model calls       : 220
+valid first try   : 0
+re-asks           : 110
+  succeeded       : 103
+  still invalid   : 7
+fallback rows     : 7
+```
+
+The model is injected as `call_model(system, user)`, so the entire loop is
+tested with scripted responses and no key. `call_model=None` means no model is
+configured — those rows take the default and are counted separately from a
+failed re-ask, since no call was made.
+
+> ⚠️ **`dataset/output.csv` is currently a placeholder.** The Layer 3 model
+> client is not wired, so all 110 rows are the safe default. The file is
+> contract-valid — which proves the plumbing — but contains no real routing. The
+> run prints a loud banner saying so. Re-run `python code/main.py` once the
+> client lands.
