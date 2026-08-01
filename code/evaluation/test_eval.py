@@ -261,6 +261,46 @@ def main():
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)
 
+    print("\n[golden set]")
+    import golden as golden_mod
+    import run_golden
+    ids = [c.message_id for c in golden_mod.GOLDEN]
+    check("golden set is small", 4 <= len(golden_mod.GOLDEN) <= 10, len(golden_mod.GOLDEN))
+    check("no duplicate rows", len(set(ids)) == len(ids))
+    by_id = run_golden.resolve_rows(ds)
+    check("every golden row resolves", all(i in by_id for i in ids),
+          [i for i in ids if i not in by_id])
+    check("golden rows carry no labels",
+          all(not (set(by_id[i]) & set(LABEL_COLUMNS)) for i in ids))
+    check("every case states a constraint",
+          all(c.expect_action or c.forbid_action or c.expect_type or c.forbid_type
+              for c in golden_mod.GOLDEN))
+    check("every case explains itself", all(len(c.why) > 40 for c in golden_mod.GOLDEN))
+    check("asserted-only cases are flagged",
+          all(c.ground_truth or c.source == "messages" for c in golden_mod.GOLDEN))
+    covered = {c.case for c in golden_mod.GOLDEN}
+    for required in ("scam-as-payment", "useful-poster-for-this-user",
+                     "muted-group-urgent-mention", "voice-note-only",
+                     "high-dismissal-repeat-sender"):
+        check("covers %s" % required, required in covered)
+    check("the identical-content pair is both present",
+          {"useful-poster-for-this-user", "same-poster-hostile-rapport"} <= covered)
+    pair = {c.case: c.message_id for c in golden_mod.GOLDEN}
+    a = next(s for s in ds.samples if s["message_id"] == pair["useful-poster-for-this-user"])
+    b = next(s for s in ds.samples if s["message_id"] == pair["same-poster-hostile-rapport"])
+    check("the pair really is identical content",
+          a["message_text"] == b["message_text"] and a["media_id"] == b["media_id"])
+    check("the pair really is labelled differently", a["action"] != b["action"])
+
+    ok = golden_mod.evaluate(golden_mod.GOLDEN[0], "mute", "scam")
+    check("a satisfying row passes", ok == [])
+    bad = golden_mod.evaluate(golden_mod.GOLDEN[0], "notify", "urgent")
+    check("a violating row fails", len(bad) == 2, bad)
+    forbid = next(c for c in golden_mod.GOLDEN if c.forbid_action)
+    check("forbidden action is caught",
+          golden_mod.evaluate(forbid, sorted(forbid.forbid_action)[0], "promotion"))
+    check("golden runner exits 0 while the model is unwired", run_golden.main([]) == 0)
+
     print("\n[harness end to end]")
     check("scoring run exits 0", eval_main([]) == 0)
     check("leak-check run exits 0", eval_main(["--leak-check"]) == 0)
