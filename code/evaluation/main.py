@@ -64,8 +64,18 @@ def strip_labels(row):
 
 
 def build_model_callable():
-    """Same seam as code/main.py. None until the Layer 3 client exists."""
-    return None
+    """The same Layer 3 client the pipeline uses, so eval scores the real system.
+
+    Returns None when no credentials are configured, or when the caller asked for
+    an offline run. The response cache means re-scoring an unchanged prompt costs
+    nothing.
+    """
+    sys.path.insert(0, CODE)
+    from envload import load_env
+    load_env()
+    from client import RouterClient
+    client = RouterClient()
+    return client if client.available else None
 
 
 def load_predictions(path):
@@ -125,6 +135,9 @@ def main(argv=None):
     ap.add_argument("--media-cache", default=DEFAULT_MEDIA_CACHE)
     ap.add_argument("--predictions", default="", help="score an existing predictions CSV")
     ap.add_argument("--no-guard", action="store_true", help="score the router without Layer 4")
+    ap.add_argument("--no-model", action="store_true",
+                    help="skip the model entirely (offline: every row takes the safe "
+                         "default). Used by the test suite so it costs no quota.")
     ap.add_argument("--reported-policy", default=REPORTED_POLICY_UNANIMOUS,
                     choices=[REPORTED_POLICY_UNANIMOUS, REPORTED_POLICY_ANY])
     ap.add_argument("--leak-check", action="store_true",
@@ -163,6 +176,7 @@ def main(argv=None):
         return 0
 
     # ---- predictions -------------------------------------------------
+    overridden = set()
     if args.predictions:
         preds = load_predictions(args.predictions)
         source = args.predictions
@@ -175,11 +189,12 @@ def main(argv=None):
         stripped = [strip_labels(r) for r in samples]
         contexts = {r["message_id"]: build_context(r, dataset, reaction_stats)
                     for r in stripped}
-        call_model = build_model_callable()
+        call_model = None if args.no_model else build_model_callable()
         decisions, route_stats = route_all(stripped, contexts, call_model, RouteStats())
         if not args.no_guard:
-            decisions, _ = apply_guard_all(
+            decisions, records = apply_guard_all(
                 decisions, contexts, GuardPolicy(reported_policy=args.reported_policy))
+            overridden = {r.message_id for r in records if r.disagreement}
         preds = {mid: d.to_row() for mid, d in decisions.items()}
         source = "live pipeline (%s, guard %s)" % (
             "model wired" if call_model else "NO MODEL - safe defaults",
@@ -287,14 +302,41 @@ def main(argv=None):
         print("  %d bin(s) overconfident by more than 0.10" % cal["overconfident_bins"])
     print("  (positive gap = stated confidence exceeds observed accuracy)")
 
+    # Split by who actually decided the row. The guard writes fixed confidences
+    # (0.93 scam, 0.90 reported, 0.88 opt-out, 0.85 muted) onto rows that are right
+    # by construction, which flatters the aggregate. Only the router-decided figure
+    # says anything about whether the MODEL's stated confidence means something.
+    router_idx = [i for i, r in enumerate(samples) if r["message_id"] not in overridden]
+    guard_idx = [i for i, r in enumerate(samples) if r["message_id"] in overridden]
+    if guard_idx:
+        router_cal = calibration([pred_conf[i] for i in router_idx],
+                                 [correct[i] for i in router_idx])
+        guard_cal = calibration([pred_conf[i] for i in guard_idx],
+                                [correct[i] for i in guard_idx])
+        router_acc = (sum(1 for i in router_idx if correct[i]) / float(len(router_idx))
+                      if router_idx else 0.0)
+        guard_acc = (sum(1 for i in guard_idx if correct[i]) / float(len(guard_idx))
+                     if guard_idx else 0.0)
+        print("")
+        print("  split by decider:")
+        print("    router-decided : n=%-3d action-acc %5.1f%%  ECE %.3f   <- the meaningful one"
+              % (len(router_idx), router_acc * 100, router_cal["ece"]))
+        print("    guard-overridden: n=%-3d action-acc %5.1f%%  ECE %.3f   (fixed constants)"
+              % (len(guard_idx), guard_acc * 100, guard_cal["ece"]))
+    else:
+        print("  (no rows were overridden, so this ECE is entirely the router's)")
+
     # ---- ledger ------------------------------------------------------
     if args.record:
         import datetime as _dt
+        if args.predictions:
+            model_state = "file"
+        elif args.no_model:
+            model_state = "none"
+        else:
+            model_state = os.environ.get("ROUTER_MODEL", "gemini-3.5-flash-lite")
         config = "guard=%s;reported=%s;model=%s" % (
-            "off" if args.no_guard else "on",
-            args.reported_policy,
-            "none" if (not args.predictions and build_model_callable() is None) else "wired",
-        )
+            "off" if args.no_guard else "on", args.reported_policy, model_state)
         record = {
             "timestamp": _dt.datetime.now().replace(microsecond=0).isoformat(),
             "git_sha": git_sha(),

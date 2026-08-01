@@ -21,7 +21,7 @@ silently truncated mid-structure.
 import json
 import math
 
-from aggregates import notification_load
+from aggregates import notification_load, relative_label
 from loaders import counterpart_of, parse_ts
 from retrieve import DEFAULT_SHORTLIST, shortlist
 from textutil import condense
@@ -81,17 +81,38 @@ def _media_block(media, field_limit=MEDIA_FIELD_LIMIT):
 
 
 def _user_block(dataset, message):
-    user = dataset.user(message["user_id"])
+    """The user's own posture, with their base rate stated.
+
+    `baseline_open_share` is the denominator everything else is read against. It
+    is the difference between "opened 8 of 10" meaning unusually engaged and
+    meaning below average -- across users the share spans 0.17 to 0.91.
+    """
+    user_id = message["user_id"]
+    user = dataset.user(user_id)
+    baselines = dataset.baselines
+
     block = {
-        "user_id": message["user_id"],
+        "user_id": user_id,
         "quiet_hours": user.get("do_not_disturb_window") or None,
         "opened_30d": user.get("messages_opened_30d"),
         "replied_30d": user.get("messages_replied_30d"),
         "dismissed_30d": user.get("notifications_dismissed_30d"),
         "reported_30d": user.get("messages_reported_30d"),
     }
-    load = notification_load(dataset, message["user_id"], message.get("created_at"))
+
+    own_share = baselines["user_open_share"].get(user_id)
+    if own_share is not None:
+        block["baseline_open_share"] = round(own_share, 2)
+        vs_others = relative_label(own_share, baselines["median_open_share"])
+        if vs_others:
+            block["baseline_vs_other_users"] = vs_others
+
+    load = notification_load(dataset, user_id, message.get("created_at"))
     if load:
+        own_load = baselines["user_daily_load"].get(user_id)
+        vs_typical = relative_label(own_load, baselines["median_daily_load"])
+        if vs_typical:
+            load["vs_typical_user"] = vs_typical
         block["notification_load"] = load
     return _drop_empty(block)
 
@@ -104,12 +125,20 @@ def _sender_block(dataset, message):
     if conv == "group" and message.get("group_id"):
         group = dataset.group(message["group_id"])
         membership = dataset.member(message["group_id"], message["user_id"])
+        try:
+            volume = int(group.get("messages_30d") or 0)
+        except (TypeError, ValueError):
+            volume = None
         return _drop_empty({
             "type": "group",
             "group_name": group.get("group_name"),
             "group_type": group.get("group_type"),
             "member_count": group.get("member_count"),
             "messages_30d": group.get("messages_30d"),
+            # 92 vs 742 messages/30d is the difference between a quiet family chat
+            # and a firehose; the raw number alone does not say which this is.
+            "volume_vs_typical_group": relative_label(
+                volume, dataset.baselines["median_group_volume"]),
             "sender_user_id": message.get("sender_user_id"),
             "user_membership": _drop_empty({
                 "role": membership.get("role"),
@@ -172,7 +201,15 @@ def build_context(message, dataset, reaction_stats, token_budget=DEFAULT_TOKEN_B
     }
 
     if stats and stats.n:
-        context["rapport_with_this_sender"] = stats.summary()
+        rapport = stats.summary()
+        # State engagement with this sender against the user's own norm, not in
+        # isolation. "0.80 vs 0.70 norm (above, 1.1x)" is actionable; "opened 8 of
+        # 10" on its own is not, because the norm varies from 0.17 to 0.91.
+        vs_own = relative_label(stats.open_rate,
+                                dataset.baselines["user_open_share"].get(message["user_id"]))
+        if vs_own:
+            rapport["open_rate_vs_user_norm"] = vs_own
+        context["rapport_with_this_sender"] = rapport
 
     candidates = shortlist(message, dataset, limit=shortlist_limit,
                            text_chars=_CANDIDATE_TEXT_STEPS[0], allow_fallback=allow_fallback)

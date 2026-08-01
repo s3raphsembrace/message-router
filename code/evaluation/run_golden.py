@@ -43,6 +43,8 @@ def main(argv=None):
     ap.add_argument("--dataset", default=DEFAULT_DATASET)
     ap.add_argument("--media-cache", default=DEFAULT_MEDIA_CACHE)
     ap.add_argument("--no-guard", action="store_true")
+    ap.add_argument("--no-model", action="store_true",
+                    help="skip the model (offline). Used by the test suite.")
     ap.add_argument("--reported-policy", default=REPORTED_POLICY_UNANIMOUS,
                     choices=[REPORTED_POLICY_UNANIMOUS, REPORTED_POLICY_ANY])
     args = ap.parse_args(argv)
@@ -59,7 +61,7 @@ def main(argv=None):
 
     rows = [by_id[c.message_id] for c in GOLDEN]
     contexts = {r["message_id"]: build_context(r, dataset, reaction_stats) for r in rows}
-    call_model = build_model_callable()
+    call_model = None if args.no_model else build_model_callable()
     decisions, _ = route_all(rows, contexts, call_model, RouteStats())
     if not args.no_guard:
         decisions, _ = apply_guard_all(

@@ -660,3 +660,73 @@ labelled `digest` and `mute`. Nothing in the content separates them — only the
 recipient's history does (8 of 10 opened, versus 0 of 6 with 6 mutes). **If a
 change breaks exactly one of that pair, personalization has collapsed into
 content matching.**
+
+## Known limitations
+
+Stated plainly, because several of these limit how much any number in this repo
+should be trusted.
+
+### The evaluation is small and in-sample
+
+- `sample_messages.csv` has **30 labelled rows. There is no holdout.** Every
+  reported accuracy is in-sample, and any tuning done against it is tuning on the
+  test set.
+- **6 of the 7 golden-set rows are drawn from those same 30.** Passing the golden
+  set is therefore not independent evidence.
+- **Evidence precision is effectively computed on ~23 rows**, because 7 messages
+  are offered no candidates at all and can only be scored on `none`-agreement.
+- **Per-type accuracy is noise for most types.** 4 of the 10 observed
+  `message_type` values have ≤2 labelled examples. A per-class precision figure on
+  a support of 1 is not a measurement.
+- **The ledger's own noise floor is 3.33pp** (one row of thirty), which is larger
+  than many genuine prompt improvements. Most real changes will be reported as
+  `noise` and be indistinguishable from luck at this sample size.
+
+The 110 rows in `messages.csv` have no labels at all, so nothing here measures
+performance on the actual submission set.
+
+### The guard cannot separate the hardest pair
+
+`msg_056` (*"@u_001 doctor appointment moved to 6 PM… confirm if you can leave by
+5:15"*, muted group) and `msg_040` (*"@u_007 forward this to ten people for
+blessings"*, muted group) present **identical guard-visible signals**: muted,
+directly addressed, no scam signature, no reports. The mute exemption keys on
+`message_type`, so the guard follows whatever the router decided. **On this pair
+Layer 4 contributes nothing** — if the router mislabels the chain forward as
+`urgent`, the guard will pass it through. The deterministic layer is a floor for
+risk and consent, not a general safety net.
+
+### What "personalization" here actually means
+
+Implemented: per-user opt-out and mute state, per-(user, sender) reaction history
+joined from `message_events`, repetition detection against that user's own
+history, and base-rate normalization so engagement is reported against the user's
+own norm rather than absolutely.
+
+**Not** implemented, and not claimed: no learned per-user model, no per-user
+thresholds, no collaborative signal across users, no temporal decay fitted to
+anything, and no personalization at all for the 7 users with no history against
+the sender in question. The weights in `retrieve.py` and the thresholds in
+`signals.py` are hand-set from the analysis in `code/analysis/`, not fitted.
+
+### Calibration is partly measuring fixed constants
+
+When the guard overrides a row it writes a fixed confidence (0.93 scam, 0.90
+reported, 0.88 opt-out, 0.85 muted). Those rows are correct by construction, so
+they pull the aggregate ECE down and make calibration look better than the
+router's own confidence warrants. The evaluation now reports **router-decided and
+guard-overridden ECE separately**; only the router-decided figure says anything
+about whether the model's stated confidence means something.
+
+### Operational constraints
+
+- On a free-tier key, `gemini-2.5-flash` allows **20 requests per day**, which
+  cannot route 110 messages. The default is `gemini-3.5-flash-lite`, which has its
+  own quota and measured ~10x faster. `ROUTER_MODEL` overrides it. A stronger
+  model would very likely score better.
+- Media interpretation is **model-derived**. `interp_confidence` is carried
+  through the context, but an OCR or transcription error becomes a routing error
+  with no independent check.
+- The routing decision for the 23 media rows depends on Layer 1 having run. If
+  `cache/media_interpretations.json` is absent, those rows route on metadata alone
+  and the run does not fail — it just gets worse quietly.

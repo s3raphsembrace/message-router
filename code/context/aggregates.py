@@ -102,6 +102,75 @@ def build_reaction_stats(dataset):
     return agg
 
 
+def _median(values):
+    ordered = sorted(v for v in values if v is not None)
+    if not ordered:
+        return None
+    mid = len(ordered) // 2
+    return ordered[mid] if len(ordered) % 2 else (ordered[mid - 1] + ordered[mid]) / 2.0
+
+
+def build_baselines(dataset):
+    """Dataset-wide denominators, so engagement can be reported RELATIVE.
+
+    Without these the router is asked to judge a ratio with no base rate: it is
+    told "opened 8 of 10 from this sender" and has no way to know that this user's
+    own norm is 0.17 or 0.91. Across users the open share spans 0.17 to 0.91, so
+    the same 8/10 means "unusually engaged" for one person and "below average" for
+    another. Same problem for group volume (92 vs 742 messages/30d) and for
+    notification load.
+    """
+    open_share = {}
+    for user_id, row in dataset.users.items():
+        try:
+            opened = int(row.get("messages_opened_30d") or 0)
+            dismissed = int(row.get("notifications_dismissed_30d") or 0)
+        except (TypeError, ValueError):
+            opened = dismissed = 0
+        open_share[user_id] = (opened / float(opened + dismissed)) if (opened + dismissed) else None
+
+    volumes = []
+    for group in dataset.groups.values():
+        try:
+            volumes.append(int(group.get("messages_30d") or 0))
+        except (TypeError, ValueError):
+            pass
+
+    per_user_load = {}
+    for user_id, days in dataset.daily_load.items():
+        if not days:
+            continue
+        total = 0
+        for row in days.values():
+            try:
+                total += int(row.get("notifications_sent") or 0)
+            except (TypeError, ValueError):
+                pass
+        per_user_load[user_id] = total / float(len(days))
+
+    return {
+        "user_open_share": open_share,
+        "median_open_share": _median(open_share.values()),
+        "median_group_volume": _median(volumes),
+        "user_daily_load": per_user_load,
+        "median_daily_load": _median(per_user_load.values()),
+    }
+
+
+def relative_label(value, baseline, tolerance=0.15):
+    """'above' / 'at' / 'below', with the ratio, for a value against its baseline."""
+    if value is None or not baseline:
+        return None
+    ratio = value / float(baseline)
+    if ratio >= 1.0 + tolerance:
+        word = "above"
+    elif ratio <= 1.0 - tolerance:
+        word = "below"
+    else:
+        word = "at"
+    return "%.2f vs %.2f norm (%s, %.1fx)" % (value, baseline, word, ratio)
+
+
 def notification_load(dataset, user_id, created_at=None):
     """The user's baseline notification load and how much of it they throw away.
 

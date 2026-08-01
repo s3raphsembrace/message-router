@@ -19,9 +19,13 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(HERE)
+sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(HERE, "context"))
 sys.path.insert(0, os.path.join(HERE, "router"))
 sys.path.insert(0, os.path.join(HERE, "guard"))
+
+from envload import load_env                                   # noqa: E402
+load_env()
 
 from aggregates import build_reaction_stats                    # noqa: E402
 from apply import apply_guard_all                              # noqa: E402
@@ -37,13 +41,17 @@ DEFAULT_OUTPUT = os.path.join(REPO_ROOT, "dataset", "output.csv")
 DEFAULT_AUDIT = os.path.join(REPO_ROOT, "cache", "override_audit.csv")
 
 
-def build_model_callable():
-    """The Layer 3 client. Returns None until it is built.
+def build_model_callable(progress=None):
+    """The Layer 3 client, or None when no credentials are configured.
 
-    Kept as a seam so the routing loop, validator, re-ask and writer are all
-    exercised end to end today, and wiring the client changes nothing else.
+    Returning None is not an error: the pipeline still runs and every row takes
+    the validated safe default. It just is not a submission.
     """
-    return None
+    from client import RouterClient
+    client = RouterClient(progress=progress)
+    if not client.available:
+        return None
+    return client
 
 
 def main(argv=None):
@@ -95,15 +103,29 @@ def main(argv=None):
         for r in dataset.messages
     }
 
-    call_model = build_model_callable()
+    done = {"n": 0, "cache": 0, "ok": 0, "error": 0}
+
+    def progress(kind):
+        done["n"] += 1
+        done[kind] = done.get(kind, 0) + 1
+        if done["n"] % 10 == 0 or kind == "error":
+            sys.stderr.write("    ... %d calls (%d cached, %d live, %d failed)\n"
+                             % (done["n"], done["cache"], done["ok"], done["error"]))
+            sys.stderr.flush()
+
+    call_model = build_model_callable(progress=progress)
     print("Message Notification Router")
     print("  messages : %d" % len(message_ids))
     print("  media    : %d interpreted" % sum(1 for m in dataset.media.values() if m.ok))
-    print("  model    : %s" % ("configured" if call_model else "NOT WIRED - see note below"))
+    print("  model    : %s" % (
+        ("%s (cache: %d entries)" % (call_model.model, len(call_model.cache)))
+        if call_model else "NOT WIRED - see note below"))
     print("")
 
     decisions, stats = route_all(dataset.messages, contexts, call_model,
                                  RouteStats(), args.max_reasks)
+    if call_model is not None:
+        call_model.save()
     print(stats.report())
     print("")
 

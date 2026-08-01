@@ -29,7 +29,9 @@ from schema import (
     MediaInterpretation,
 )
 
-DEFAULT_MODEL = "gemini-2.5-flash"
+# See code/router/client.py: gemini-2.5-flash is capped at 20 requests per day on
+# a free-tier key. Quota is per model, so 3.5-flash-lite has its own bucket.
+DEFAULT_MODEL = "gemini-3.5-flash-lite"
 API_KEY_ENV = ("GEMINI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_GENAI_API_KEY")
 MAX_ATTEMPTS = 3
 BACKOFF_SECONDS = 2.0

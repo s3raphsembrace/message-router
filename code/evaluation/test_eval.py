@@ -117,10 +117,15 @@ def main():
     check("partial: not an exact match", ev["exact_match"] == 0.0)
     ev = evidence_scores(["m1"], ["none"])
     check("citing nothing when something was expected -> recall 0", ev["recall"] == 0.0)
-    check("precision undefined when nothing was cited", ev["precision"] is None)
+    check("...and precision 0, not None, so the ledger records it", ev["precision"] == 0.0)
+    check("...and F1 is numeric", ev["f1"] == 0.0)
     ev = evidence_scores(["none"], ["m1"])
     check("padding when none expected -> fp", ev["false_positives"] == 1)
-    check("recall undefined when nothing was expected", ev["recall"] is None)
+    check("padding scores 0, not None", ev["precision"] == 0.0 and ev["recall"] == 0.0)
+    ev = evidence_scores(["none"], ["none"])
+    check("agreeing on 'none' is perfect, not undefined",
+          ev["precision"] == 1.0 and ev["recall"] == 1.0 and ev["f1"] == 1.0)
+    check("every F1 is a float", isinstance(ev["f1"], float))
     ev = evidence_scores(["none", "none"], ["none", "m1"])
     check("none agreement is a rate", abs(ev["none_agreement"] - 0.5) < 1e-9)
 
@@ -299,21 +304,21 @@ def main():
     forbid = next(c for c in golden_mod.GOLDEN if c.forbid_action)
     check("forbidden action is caught",
           golden_mod.evaluate(forbid, sorted(forbid.forbid_action)[0], "promotion"))
-    check("golden runner exits 0 while the model is unwired", run_golden.main([]) == 0)
+    check("golden runner exits 0 offline", run_golden.main(["--no-model"]) == 0)
 
     print("\n[harness end to end]")
-    check("scoring run exits 0", eval_main([]) == 0)
+    check("scoring run exits 0", eval_main(["--no-model"]) == 0)
     check("leak-check run exits 0", eval_main(["--leak-check"]) == 0)
-    check("no-guard run exits 0", eval_main(["--no-guard"]) == 0)
+    check("no-guard run exits 0", eval_main(["--no-guard", "--no-model"]) == 0)
     check("history run exits 0", eval_main(["--history"]) == 0)
     tmpdir = tempfile.mkdtemp(prefix="ledger_e2e_")
     try:
         path = os.path.join(tmpdir, "runs.csv")
         check("recording run exits 0",
-              eval_main(["--ledger", path, "--record", "test run"]) == 0)
+              eval_main(["--ledger", path, "--record", "test run", "--no-model"]) == 0)
         check("recorded run landed in the ledger", len(ledger.load_runs(path)) == 1)
         check("second recording computes a delta",
-              eval_main(["--ledger", path, "--record", "test run 2", "--no-guard"]) == 0
+              eval_main(["--ledger", path, "--record", "test run 2", "--no-guard", "--no-model"]) == 0
               and len(ledger.load_runs(path)) == 2)
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)

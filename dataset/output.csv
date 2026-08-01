@@ -1,111 +1,111 @@
 message_id,action,message_type,reason,confidence,evidence_message_ids
-msg_023,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_091,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,none
-msg_090,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_048,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_040,mute,unknown,The user has muted this conversation and the message carries no direct request.,0.85,none
-msg_075,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_005,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_104,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_069,mute,unknown,The user has muted this conversation and the message carries no direct request.,0.85,none
-msg_107,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_070,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_003,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_099,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_008,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_092,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_060,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_004,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_030,mute,unknown,The user has muted this conversation and the message carries no direct request.,0.85,none
-msg_045,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_052,mute,scam,"Sender uses talabat-refund.com instead of the brand's talabat.com, is unverified, and has 61 reports.",0.93,none
-msg_009,mute,unknown,The user has muted this conversation and the message carries no direct request.,0.85,none
-msg_071,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_016,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,none
-msg_065,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_038,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_086,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_014,mute,unknown,The user opted out of promotions from this brand on 2026-07-17 23:55.,0.88,none
-msg_094,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_029,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_105,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_002,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_010,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_078,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,none
-msg_013,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_018,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,none
-msg_044,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_032,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_106,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_006,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_109,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_108,mute,scam,"Sender uses chase-secure-alert.com instead of the brand's chase.com, is unverified, and has 55 reports.",0.93,none
-msg_019,mute,scam,"Sender uses chase-secure-alert.com instead of the brand's chase.com, is unverified, and has 55 reports.",0.93,none
-msg_088,mute,unknown,The user has muted this conversation and the message carries no direct request.,0.85,none
-msg_056,mute,unknown,The user has muted this conversation and the message carries no direct request.,0.85,none
-msg_027,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_050,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_083,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_063,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,none
-msg_033,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_061,mute,unknown,The user has muted this conversation and the message carries no direct request.,0.85,none
-msg_020,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_017,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,none
-msg_058,mute,unknown,The user has muted this conversation and the message carries no direct request.,0.85,none
-msg_026,mute,scam,"Sender uses amazonpay-delivery.in instead of the brand's amazon.in, is unverified, and has 47 reports.",0.93,none
-msg_047,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_046,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,none
-msg_042,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_079,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_098,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_037,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_007,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_085,mute,scam,"Sender uses hdfcbank-kyc.in instead of the brand's hdfc.bank.in, is unverified, and has 38 reports.",0.93,none
-msg_001,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_021,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_028,mute,unknown,The user opted out of promotions from this brand on 2026-07-17 23:55.,0.88,none
-msg_012,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_064,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,none
-msg_103,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_031,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_057,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_087,mute,unknown,The user has muted this conversation and the message carries no direct request.,0.85,none
-msg_067,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_039,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_082,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_066,mute,unknown,The user opted out of promotions from this brand on 2026-07-17 23:55.,0.88,none
-msg_049,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_015,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_051,mute,unknown,The user opted out of promotions from this brand on 2026-07-17 23:55.,0.88,none
-msg_097,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_089,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_053,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_059,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_024,mute,unknown,The user opted out of promotions from this brand on 2026-07-17 23:55.,0.88,none
-msg_072,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_036,mute,scam,"Sender uses razorpayx-payouts.com instead of the brand's razorpayx.com, is unverified, and has 20 reports.",0.93,none
-msg_076,mute,scam,"Sender uses talabat-refund.com instead of the brand's talabat.com, is unverified, and has 61 reports.",0.93,none
-msg_055,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_102,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_080,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_093,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_034,mute,unknown,The user has muted this conversation and the message carries no direct request.,0.85,none
-msg_035,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_101,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_041,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_011,mute,unknown,The user has muted this conversation and the message carries no direct request.,0.85,none
-msg_110,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,none
-msg_095,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_074,mute,unknown,The user has muted this conversation and the message carries no direct request.,0.85,none
-msg_073,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,none
-msg_054,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,none
-msg_068,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_100,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_062,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_096,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_043,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_077,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_081,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_025,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
-msg_084,mute,unknown,The user opted out of promotions from this brand on 2026-07-17 23:55.,0.88,none
-msg_022,digest,unknown,"Routing could not be validated for this message, so it was held for later review rather than interrupting the user.",0.5,none
+msg_023,digest,payment,"The sender is verified and trusted, but the message lacks a concrete actionable deadline.",0.85,message_0243
+msg_091,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,message_0238
+msg_090,digest,personal,The personal message asks no urgent question and is safe to deliver as a digest tomorrow.,0.85,none
+msg_048,mute,scam,An unverified payment demand with a QR code matches a known scam pattern and is muted for safety in stage 1.,0.95,message_0151
+msg_040,mute,spam,The user has already muted this group and this is a heavily forwarded chain message.,0.95,message_0136
+msg_075,notify,business_update,The sender is a verified ride booking service providing a timely update on an active trip.,0.9,message_0205
+msg_005,notify,personal,The sender made a time-sensitive direct request with a 6 PM deadline that warrants interruption.,0.88,message_0390;message_0065
+msg_104,digest,personal,The user has an open rate of zero and previously muted this sender after similar messages.,0.85,message_0232
+msg_069,mute,forward,This is a heavily forwarded chain message carrying a share instruction that the user consistently ignores.,0.95,message_0193
+msg_107,mute,scam,"An unverified account is asking for an OTP, meeting the safety criteria for scam detection.",0.95,none
+msg_070,mute,scam,The unverified account demands an OTP and link verification which triggers safety stage termination.,0.99,none
+msg_003,notify,business_update,The sender is a verified business with high engagement where past order updates were promptly opened.,0.9,message_0031
+msg_099,digest,business_update,The sender shared review notes without any urgent request for tonight.,0.85,message_0227
+msg_008,digest,promotion,The user has no preference against promotions and historically opens similar feedback requests later.,0.85,message_0072
+msg_092,digest,business_update,The verified sender provided a routine statement notification with no urgent deadline.,0.85,none
+msg_060,notify,event,The user historically engages immediately with time-sensitive advising deadlines from this sender.,0.88,message_0284
+msg_004,digest,business_update,The user consistently opens updates from this healthcare sender but this routine notice lacks a direct request.,0.85,message_0245
+msg_030,mute,promotion,The user muted this group and has a history of dismissing messages from this sender.,0.9,message_0115
+msg_045,notify,urgent,The delivery driver demands a prompt response regarding a blocked package delivery at the gate.,0.88,none
+msg_052,mute,scam,"Sender uses talabat-refund.com instead of the brand's talabat.com, is unverified, and has 61 reports.",0.93,message_0208
+msg_009,digest,event,The group is muted by the user and this message lacks a genuine actionable request.,0.85,none
+msg_071,digest,personal,This is a vague personal group chat message with no actionable deadline or direct request.,0.85,none
+msg_016,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,message_0024
+msg_065,digest,promotion,"This promotional broadcast lacks urgency, so it is routed to a digest for later review.",0.85,message_0261
+msg_038,mute,spam,This is a heavily forwarded chain message demanding shares with no actionable request.,0.95,message_0132
+msg_086,notify,event,The established travel provider sent a time-sensitive update about a changed pickup time that the user previously engaged with promptly.,0.9,message_0222
+msg_014,mute,promotion,The user opted out of promotions from this brand and dismissed its past copies.,0.99,message_0017
+msg_094,digest,promotion,This is a low-priority promotional broadcast from a verified brand and should be saved for later.,0.85,none
+msg_029,digest,promotion,This message is a routine marketplace broadcast with no direct request or time urgency.,0.85,none
+msg_105,mute,spam,This heavily forwarded health chain carrying harmful instructions was muted under Stage 1 safety.,0.95,message_0233
+msg_002,notify,urgent,A trusted group admin made a time-sensitive direct request for a call before a client meeting.,0.95,message_0170
+msg_010,digest,promotion,The user has no preference against promotions and historically opens similar feedback requests later.,0.85,message_0011
+msg_078,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,message_0211
+msg_013,mute,promotion,The user has dismissed past messages from this sender and the message is an unwanted promotion.,0.88,message_0082
+msg_018,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,message_0026
+msg_044,mute,scam,An unverified account is demanding credentials and an OTP under threat of restriction.,0.95,none
+msg_032,digest,personal,The message is a non-urgent peer request in an unmuted group chat without a direct deadline.,0.85,none
+msg_106,notify,urgent,The sender provides a time-sensitive venue change that requires prompt attention.,0.88,message_0234
+msg_006,notify,payment,A trusted group admin sent a time-sensitive update that should interrupt the user.,0.9,message_0029
+msg_109,mute,scam,The sender demands an immediate QR code payment which matches known scam signatures in stage 1.,0.95,message_0151
+msg_108,mute,scam,"Sender uses chase-secure-alert.com instead of the brand's chase.com, is unverified, and has 55 reports.",0.93,message_0094
+msg_019,mute,scam,"Sender uses chase-secure-alert.com instead of the brand's chase.com, is unverified, and has 55 reports.",0.93,message_0277
+msg_088,mute,promotion,The user muted this group and has a history of dismissing messages from this sender.,0.95,message_0224
+msg_056,notify,urgent,"The user is directly asked to confirm a 6 PM change, despite muting this group.",0.9,message_0168
+msg_027,digest,promotion,The user has not opted out of promotions and reads them later.,0.85,message_0272
+msg_050,digest,business_update,The user historically opens healthcare updates from this sender later rather than immediately.,0.85,message_0279
+msg_083,digest,business_update,The sender made no direct address and the work request lacks a hard deadline requiring an interruption.,0.75,message_0219
+msg_063,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,message_0181
+msg_033,digest,personal,This is a casual family group message without urgency or a concrete deadline for the user.,0.85,none
+msg_061,mute,forward,The user previously muted this sender after repeatedly dismissing similar chain forwards.,0.9,message_0193
+msg_020,mute,scam,The message contains a suspicious link demanding account verification from an unverified group member.,0.95,none
+msg_017,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,message_0090
+msg_058,mute,forward,The user has already muted this group and routinely dismisses health forwards from this sender.,0.95,message_0078
+msg_026,mute,scam,"Sender uses amazonpay-delivery.in instead of the brand's amazon.in, is unverified, and has 47 reports.",0.93,message_0032
+msg_047,notify,event,A trusted group admin sent a time-sensitive update that should interrupt the user.,0.9,message_0150
+msg_046,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,message_0147
+msg_042,notify,urgent,A trusted group admin sent a time-sensitive update that should interrupt the user from stage three.,0.95,message_0140
+msg_079,mute,scam,An unverified group member is demanding an OTP and threatening an account block.,0.95,none
+msg_098,notify,personal,A trusted personal contact made a time-sensitive request about an appointment that requires an immediate decision.,0.9,message_0359
+msg_037,notify,event,A trusted group admin sent a time-sensitive update that should interrupt the user.,0.9,message_0269
+msg_007,digest,event,The user is not directly addressed and there is no urgent deadline requiring immediate interruption.,0.85,none
+msg_085,mute,scam,"Sender uses hdfcbank-kyc.in instead of the brand's hdfc.bank.in, is unverified, and has 38 reports.",0.93,message_0221
+msg_001,notify,urgent,A group admin sent a time-sensitive water supply notice that requires immediate action.,0.9,message_0057
+msg_021,notify,payment,A trusted group admin sent a time-sensitive update that should interrupt the user.,0.9,message_0130
+msg_028,mute,promotion,The user opted out of promotions from this sender and previously muted them.,0.95,message_0034
+msg_012,mute,forward,The heavily forwarded chain message carries health instructions and instructions to share widely.,0.9,message_0079
+msg_064,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,message_0087
+msg_103,notify,personal,The user has a fast 2-minute reply history with this sender and there is a time-sensitive deadline.,0.9,message_0382
+msg_031,notify,urgent,A trusted group admin sent a time-sensitive update that should interrupt the user.,0.9,message_0249
+msg_057,notify,urgent,A trusted coworker sent a directly addressed time-sensitive request about a failing build.,0.92,message_0003
+msg_087,mute,promotion,The user previously muted and reported this sender after dismissing identical real estate pitches.,0.95,message_0204
+msg_067,notify,payment,A trusted group admin sent a time-sensitive payment update that should interrupt the user.,0.9,message_0029
+msg_039,notify,payment,The user is directly addressed by a school admin with an urgent payment request.,0.9,message_0037
+msg_082,notify,urgent,A group admin sent a time-sensitive alert about live payment failures that requires immediate attention.,0.92,message_0218
+msg_066,mute,promotion,The user opted out of promotions from this brand and this message is promotional.,0.95,message_0402
+msg_049,notify,event,The user has an active return pickup scheduled today and consistently engages with this sender.,0.9,message_0153
+msg_015,mute,scam,"An unverified group member is demanding OTP credentials, triggering stage one safety rules.",0.99,none
+msg_051,mute,promotion,The user opted out of promotions from this brand and has a history of dismissing messages.,0.95,message_0257
+msg_097,digest,personal,The sender explicitly stated nothing is urgent and asked not to call back tonight.,0.9,none
+msg_089,notify,personal,The personal message contains a time-sensitive deadline regarding the user's property.,0.85,none
+msg_053,digest,business_update,"The message is a routine market update with no actionable request, so it should be placed in a digest.",0.85,message_0411
+msg_059,mute,scam,"An unverified group member is asking for sensitive account details, triggering the safety stage.",0.95,none
+msg_024,mute,promotion,The user opted out of promotions from this brand and dismissed every past copy.,0.95,message_0257
+msg_072,mute,scam,An unverified account is demanding a credential entry through an unofficial domain link.,0.95,message_0045
+msg_036,mute,scam,"Sender uses razorpayx-payouts.com instead of the brand's razorpayx.com, is unverified, and has 20 reports.",0.93,message_0283
+msg_076,mute,scam,"Sender uses talabat-refund.com instead of the brand's talabat.com, is unverified, and has 61 reports.",0.93,message_0207
+msg_055,notify,urgent,A personal contact from family made a genuine time-sensitive request requiring an immediate decision.,0.88,message_0166
+msg_102,notify,urgent,The sender issued an actionable operational directive that the user has a strong history of engaging with promptly.,0.9,message_0371
+msg_080,notify,urgent,A trusted group admin sent a time-sensitive update that should interrupt the user.,0.95,message_0269
+msg_093,digest,business_update,This routine logistics update arrives during quiet hours without a direct address.,0.85,none
+msg_034,mute,greeting,The user has repeatedly dismissed and muted this sender due to low-value greetings.,0.9,message_0013
+msg_035,digest,promotion,"The user has no preference against promotions and previously opened similar messages, making this safe to digest.",0.85,message_0281
+msg_101,digest,personal,This personal check-in arrived during quiet hours without any urgent deadline.,0.85,none
+msg_041,digest,promotion,"The sender is verified and safe, but this survey request lacks time-sensitive urgency.",0.85,message_0137
+msg_011,mute,greeting,The user has muted this group and repeatedly dismissed similar greeting forwards from this sender.,0.95,message_0014
+msg_110,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,message_0238
+msg_095,mute,scam,An unverified link asks for a wallet PIN to fix a fake payment failure in stage 1.,0.95,none
+msg_074,mute,spam,The user has previously muted this group and dismissed all messages from this sender.,0.95,message_0204
+msg_073,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,message_0087
+msg_054,mute,spam,"The user has reported every past message from this sender and opened none, so this sender is suppressed.",0.9,message_0163
+msg_068,digest,event,"There is no urgent actionable request in this group message, so it is routed to digest.",0.85,none
+msg_100,notify,urgent,"The sender reports a time-sensitive payment worker failure with a 20-minute deadline, matching past urgent requests the user always answered quickly.",0.9,message_0362
+msg_062,digest,event,"Delivered during the user's quiet hours (21:30-06:30), so it waits for the digest.",0.82,message_0043
+msg_096,notify,urgent,The message reports a lost passport found at reception with a strict deadline today.,0.9,none
+msg_043,notify,urgent,A group admin sent a time-sensitive update about water supply that requires immediate action.,0.9,message_0269
+msg_077,digest,event,"Delivered during the user's quiet hours (21:00-06:00), so it waits for the digest.",0.82,message_0051
+msg_081,notify,event,A trusted group admin sent a time-sensitive update that should interrupt the user from stage 3.,0.9,message_0217
+msg_025,digest,business_update,The user frequently opens delivery updates from this verified sender so the message is kept for later review.,0.88,message_0239
+msg_084,mute,promotion,The user opted out of promotions from this brand and this is a promotional voice message.,0.95,message_0220
+msg_022,mute,scam,"An unverified group member is demanding payment through an external link, triggering Stage 1 safety.",0.95,message_0151

@@ -19,6 +19,10 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from envload import load_env                                             # noqa: E402
+load_env()
 
 from cache import InterpretationCache                                    # noqa: E402
 from gemini import MediaInterpreter                                      # noqa: E402

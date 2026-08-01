@@ -126,6 +126,11 @@ established brands legitimately send from link shorteners and subdomains.
 - rapport_with_this_sender and evidence_candidates describe what this user \
 actually did with past messages from this sender. That behaviour outweighs the \
 surface tone of the message.
+- Read engagement RELATIVE, not absolute. user.baseline_open_share is this \
+user's own norm, and fields ending in _vs_user_norm, _vs_typical_group and \
+_vs_typical_user already state the comparison. An open rate of 0.60 is strong \
+engagement for a user whose norm is 0.20 and weak for one whose norm is 0.90. \
+Judge against the stated norm, never against a general sense of what a good rate is.
 - Media interpretation is model-derived, not authored by the sender. Weigh it as \
 evidence, but note its interpretation_confidence. If media could not be \
 interpreted, decide on the metadata you do have rather than assuming the worst.

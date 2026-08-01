@@ -1,3 +1,4 @@
 run,timestamp,git_sha,change,config,action_acc,type_acc,joint_acc,evidence_f1,evidence_precision,evidence_recall,evidence_exact,ece,cost_per_row,severe_suppressed,severe_intruded,n_rows,notes
 1,2026-08-01T17:24:52,c76e6e0,"baseline: no model wired, guard on",guard=on;reported=unanimous;model=none,0.5667,0.0333,0.0333,,,0.0,0.0667,0.058,0.4333,0,0,30,floor: safe-default + Layer 4 only
 2,2026-08-01T17:25:02,c76e6e0,ablation: Layer 4 guard disabled,guard=off;reported=unanimous;model=none,0.3667,0.0333,0.0333,,,0.0,0.0667,0.1333,0.6333,0,0,30,isolates the guard's contribution
+3,2026-08-01T18:34:04,a37f902,"steps 2-5: unknown out of LOW_VALUE_TYPES, symmetric salience, base-rate normalisation, media-aware retrieval",guard=on;reported=unanimous;model=gemini-3.5-flash-lite,0.8667,0.7,0.6667,0.3273,0.375,0.2903,0.2667,0.0807,0.1333,0,0,30,first eval with a live router

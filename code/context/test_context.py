@@ -165,19 +165,31 @@ def main():
                   for h in ds.user_history("u_007")) for c in cands))
 
     print("\n[reaction salience drives ranking]")
-    from retrieve import (FALLBACK_SIMILARITY, REACTION_NONE, REACTION_OPENED,
-                          REACTION_REPORTED, reaction_salience)
-    check("report is the strongest signal",
-          reaction_salience({"message_reported": "1"}) == REACTION_REPORTED)
-    check("mute-after outranks a plain dismissal",
+    from retrieve import (FALLBACK_SIMILARITY, REACTION_DELIBERATE, REACTION_NONE,
+                          REACTION_PASSIVE, REACTION_STRONG, reaction_salience)
+    # The scale is symmetric by construction: each negative tier has a positive
+    # tier of equal weight. An earlier version scored `reported` at 1.0 against
+    # `opened+replied` at 0.5, which surfaced negative history first on 59 of 110
+    # messages and biased the router toward mute.
+    check("reported and replied are equally decisive",
+          reaction_salience({"message_reported": "1"})
+          == reaction_salience({"message_replied": "1"}) == REACTION_DELIBERATE)
+    check("muted-after and a fast open are equally strong",
           reaction_salience({"muted_after_message": "1"})
-          > reaction_salience({"notification_dismissed": "1", "message_opened": "0"}))
-    check("dismissed-unopened outranks opened-and-replied",
+          == reaction_salience({"message_opened": "1", "reaction_time_minutes": "2"})
+          == REACTION_STRONG)
+    check("dismissed and plain-opened are equally passive",
           reaction_salience({"notification_dismissed": "1", "message_opened": "0"})
-          > reaction_salience({"message_opened": "1", "message_replied": "1"}))
-    check("engagement is still salient, not zero",
-          reaction_salience({"message_opened": "1"}) == REACTION_OPENED > REACTION_NONE,
-          "ranking only on negatives would starve notify cases of evidence")
+          == reaction_salience({"message_opened": "1", "reaction_time_minutes": "600"})
+          == REACTION_PASSIVE)
+    check("tiers are ordered", REACTION_DELIBERATE > REACTION_STRONG > REACTION_PASSIVE
+          > REACTION_NONE)
+    check("a slow open is weaker than a fast one",
+          reaction_salience({"message_opened": "1", "reaction_time_minutes": "600"})
+          < reaction_salience({"message_opened": "1", "reaction_time_minutes": "2"}))
+    check("junk reaction time does not raise",
+          reaction_salience({"message_opened": "1", "reaction_time_minutes": "soon"})
+          == REACTION_PASSIVE)
     check("no recorded reaction is least salient",
           reaction_salience({}) == REACTION_NONE and reaction_salience(None) == REACTION_NONE)
     ranked = shortlist(msg(ds, "msg_066"), ds)
@@ -267,8 +279,9 @@ def main():
     check("largest context is still compact",
           biggest["_meta"]["estimated_tokens"] < 1200,
           biggest["_meta"]["estimated_tokens"])
-    check("daily load is summarised to <=4 numbers",
-          len(biggest["user"].get("notification_load", {})) <= 4)
+    check("daily load is summarised to a handful of numbers, not 756 rows",
+          len(biggest["user"].get("notification_load", {})) <= 5,
+          biggest["user"].get("notification_load"))
     check("history is a shortlist, not the full table",
           all(len(c["evidence_candidates"]) <= 6 for c in all_ctx))
     total = sum(c["_meta"]["estimated_tokens"] for c in all_ctx)

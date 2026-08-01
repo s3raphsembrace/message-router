@@ -18,7 +18,14 @@ ACTION_SEVERITY = {"notify": 2, "digest": 1, "mute": 0}
 
 # Types that carry no standing value once the user has signalled they do not want
 # the sender. A muted group's event notice is still worth a digest; its promo is not.
-LOW_VALUE_TYPES = frozenset({"promotion", "greeting", "forward", "spam", "scam", "unknown"})
+#
+# `unknown` is deliberately NOT here. It used to be, which quietly turned the
+# documented "cap at digest" in rule_opted_out and rule_muted_sender into a force
+# to mute -- because the safe-default fallback row is typed `unknown`. A router
+# failure then produced suppression rather than deferral, which is the opposite of
+# what a safe default is for. It also muted msg_056, the muted-group urgent
+# mention the problem statement calls out by name.
+LOW_VALUE_TYPES = frozenset({"promotion", "greeting", "forward", "spam", "scam"})
 
 # Types that can justify breaking through quiet hours.
 QUIET_HOURS_EXEMPT_TYPES = frozenset({"urgent", "payment"})

@@ -106,12 +106,16 @@ def promotion_consent(relationship):
     }
 
 
-def repetition(message_text, history_rows, threshold=REPEAT_SIMILARITY):
+def repetition(message_text, history_rows, threshold=REPEAT_SIMILARITY, media_lookup=None):
     """How many past messages to this user are near-duplicates of this one.
 
     A resent template the user has already ignored is a strong mute signal; the
     same template they engaged with is not. The count is reported here and the
     reactions travel with the retrieved shortlist.
+
+    `media_lookup` maps media_id -> interpretation. Without it a media-only
+    history row compares as empty text and can never match, so a resent poster
+    would be invisible to repetition detection.
     """
     if not message_text:
         return {"near_duplicates_in_history": 0, "duplicate_message_ids": []}
@@ -120,7 +124,12 @@ def repetition(message_text, history_rows, threshold=REPEAT_SIMILARITY):
         return {"near_duplicates_in_history": 0, "duplicate_message_ids": []}
     hits = []
     for row in history_rows:
-        if jaccard(target, tokens(row.get("message_text"))) >= threshold:
+        text = row.get("message_text") or ""
+        if not text.strip() and media_lookup:
+            media = media_lookup.get(row.get("media_id") or "")
+            if media is not None and getattr(media, "ok", False):
+                text = media.router_text()
+        if jaccard(target, tokens(text)) >= threshold:
             hits.append(row["message_id"])
     return {"near_duplicates_in_history": len(hits), "duplicate_message_ids": hits[:5]}
 
@@ -176,7 +185,8 @@ def extract(message, dataset, reaction_stats, history_rows, media=None):
     stats = reaction_stats.get((message["user_id"], _counterpart(message)))
     sig["counterpart_unanimously_reported"] = bool(stats and stats.unanimously_reported)
 
-    sig.update(repetition(combined or text, history_rows))
+    sig.update(repetition(combined or text, history_rows,
+                          media_lookup=getattr(dataset, "media", None)))
     return sig
 
 

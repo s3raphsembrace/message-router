@@ -138,10 +138,14 @@ def evidence_scores(gold_values, pred_values):
         if not g and not p:
             both_none += 1
 
-    precision = tp / float(tp + fp) if (tp + fp) else None
-    recall = tp / float(tp + fn) if (tp + fn) else None
-    f1 = (2 * precision * recall / (precision + recall)
-          if precision and recall and (precision + recall) else None)
+    # Always numeric, so the ledger records the metric instead of storing a blank.
+    # The degenerate cases are resolved explicitly rather than left undefined:
+    #   nothing expected AND nothing cited -> 1.0 (perfect agreement on `none`)
+    #   something expected but nothing cited -> 0.0 (a real miss, not "undefined")
+    denom_p, denom_r = tp + fp, tp + fn
+    precision = (tp / float(denom_p)) if denom_p else (1.0 if denom_r == 0 else 0.0)
+    recall = (tp / float(denom_r)) if denom_r else (1.0 if denom_p == 0 else 0.0)
+    f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) else 0.0
     return {
         "rows": rows,
         "exact_match": exact / float(rows) if rows else 0.0,

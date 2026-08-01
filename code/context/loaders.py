@@ -101,6 +101,15 @@ class Dataset:
             self.daily_load[row["user_id"]][row["date"]] = row
 
         self.media = self._load_media(media_cache)
+        self._baselines = None
+
+    @property
+    def baselines(self):
+        """Dataset-wide denominators for relative reporting. Computed once."""
+        if self._baselines is None:
+            from aggregates import build_baselines
+            self._baselines = build_baselines(self)
+        return self._baselines
 
     @staticmethod
     def _load_media(cache_path):
