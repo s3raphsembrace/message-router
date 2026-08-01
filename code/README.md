@@ -6,7 +6,7 @@ Pipeline layers:
 |---|---|---|
 | 1. Multimodal preprocessing | `code/preprocess/` | built |
 | 2. Context assembly | `code/context/` | built |
-| 3. LLM router | `code/router/` | not yet |
+| 3. LLM router | `code/router/` | prompt + schema built; client next |
 | 4. Deterministic guard | `code/guard/` | not yet |
 
 Design evidence for every threshold below lives in [`code/analysis/`](analysis/).
@@ -214,9 +214,10 @@ period is stated in the context so the router does not read it as "right now".
 ```bash
 python code/preprocess/test_preprocess.py   # 56 assertions
 python code/context/test_context.py         # 98 assertions
+python code/router/test_router.py           # 60 assertions
 ```
 
-154 assertions total, no network and no API key.
+214 assertions total, no network and no API key.
 
 The real dataset is healthy in both stages — all 30 media files resolve, and no
 context exceeds the token budget — so the failure paths would otherwise never
@@ -233,3 +234,71 @@ on the specific real rows whose correct handling was established in
 mention (`msg_056`), and the muted-group chain-spam mention that is *also* both
 muted and directly addressed (`msg_040`) — proving signals alone cannot decide
 that row, and the ladder in Layers 3–4 has to.
+
+## Layer 3 — router prompt (prompt + schema; model client next)
+
+```bash
+python code/router/run.py --system            # the system prompt
+python code/router/run.py --show msg_066      # the exact prompt for one message
+python code/router/run.py --stats             # prompt sizes across all 110
+```
+
+System prompt ~1,362 tokens (identical on every call, so it caches); user prompt
+min 294 / p50 792 / max 1,150. About 2,150 tokens per call.
+
+The prompt states the **precedence ladder explicitly** rather than leaving it to
+be inferred — risk floor, then direct-address override, then baseline — because
+the three rows it exists for all invert under a naive "weigh everything" reading:
+a scam inside a trusted group, an `@`-mention that is chain spam, and a verified
+sender on a mismatched domain.
+
+### Evidence policy
+
+`evidence_message_ids` is graded on relevance and the scorer rewards `none`, so
+the policy is enforced in **two independent places** — instructed in the prompt
+and enforced in the parser, because an instruction is a preference and the scorer
+is not.
+
+The rules come from the labelled data rather than intuition. Of 30 samples:
+
+| evidence cited | samples |
+|---|---|
+| none | 2 |
+| exactly 1 id | 25 |
+| 2 ids | 3 |
+| 3+ ids | **0** |
+
+So the prompt says: cite **exactly one** in the normal case, a second only when it
+adds distinct support, **never three or more**, and prefer an empty list over a
+weak citation — stating outright that an empty list is a correct answer scored as
+`none`, and that an irrelevant citation is worse than citing nothing. The
+candidate list is described as *"a menu, not a quota"*, since a model offered K
+candidates will otherwise fill K.
+
+`decision.py` enforces the same thing independently: `MAX_EVIDENCE_IDS = 2`,
+indices resolved against the candidates actually offered, invalid or duplicated
+indices dropped, and an empty result serialised as the literal string `none`.
+
+### Expected `none` rate
+
+**7 of 110 messages are offered no candidates at all** (`msg_089`–`msg_096`) and
+are structurally forced to `none` — 6.4%, which lines up almost exactly with the
+labelled rate of 2/30 = 6.7%. A further 9 rows have only weak candidates, so a
+`none` rate somewhere in 6–15% is the expected shape. Materially more than that
+means the model is under-citing.
+
+### Failure handling
+
+`parse_response()` never raises. Plain text, an empty string, a JSON array, a
+null, an invalid action, a junk confidence — each degrades to a well-formed row
+with a `parse_notes` entry recording what happened, so one bad response cannot
+drop a message from `output.csv`.
+
+The prompt also carries an injection guard: message text, voice transcripts and
+image OCR are data written by a possibly adversarial sender, and the model is
+told not to follow instructions found inside them.
+
+> **Note on module naming:** the router's schema module is `decision.py`, not
+> `schema.py`. `code/preprocess/schema.py` is already on `sys.path` by the time
+> the router imports, and two modules named `schema` resolve to whichever
+> directory landed first.
